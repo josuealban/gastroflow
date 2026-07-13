@@ -1,29 +1,28 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
-import { App } from 'supertest/types';
-import { AppModule } from './../src/app.module';
+import { AppController } from '../src/app.controller';
 
-describe('AppController (e2e)', () => {
-  let app: INestApplication<App>;
+/**
+ * audit-service es un microservicio TCP, no una aplicación HTTP.
+ * Las pruebas e2e validan el comportamiento del controlador de mensajes
+ * directamente sin levantar un servidor TCP real.
+ */
+describe('AuditService (e2e)', () => {
+  let appController: AppController;
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
+      controllers: [AppController],
+      providers: [],
     }).compile();
 
-    app = moduleFixture.createNestApplication();
-    await app.init();
+    appController = moduleFixture.get<AppController>(AppController);
   });
 
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
-  });
-
-  afterEach(async () => {
-    await app.close();
+  it('health.audit should return ok', () => {
+    const result = appController.getHealth();
+    expect(result).toEqual({
+      status: 'ok',
+      service: 'audit-service',
+    });
   });
 });

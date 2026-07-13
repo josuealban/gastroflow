@@ -8,6 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
+const config_1 = require("@nestjs/config");
 const microservices_1 = require("@nestjs/microservices");
 const app_controller_1 = require("./app.controller");
 let AppModule = class AppModule {
@@ -16,22 +17,31 @@ exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            microservices_1.ClientsModule.register([
+            config_1.ConfigModule.forRoot({
+                isGlobal: true,
+            }),
+            microservices_1.ClientsModule.registerAsync([
                 {
                     name: 'CORE_SERVICE',
-                    transport: microservices_1.Transport.TCP,
-                    options: {
-                        host: process.env.CORE_SERVICE_HOST || '127.0.0.1',
-                        port: Number(process.env.CORE_SERVICE_PORT) || 3001,
-                    },
+                    inject: [config_1.ConfigService],
+                    useFactory: (configService) => ({
+                        transport: microservices_1.Transport.TCP,
+                        options: {
+                            host: configService.get('CORE_SERVICE_HOST') || '127.0.0.1',
+                            port: configService.get('CORE_SERVICE_PORT') || 3001,
+                        },
+                    }),
                 },
                 {
                     name: 'AUDIT_SERVICE',
-                    transport: microservices_1.Transport.TCP,
-                    options: {
-                        host: process.env.AUDIT_SERVICE_HOST || '127.0.0.1',
-                        port: Number(process.env.AUDIT_SERVICE_PORT) || 3002,
-                    },
+                    inject: [config_1.ConfigService],
+                    useFactory: (configService) => ({
+                        transport: microservices_1.Transport.TCP,
+                        options: {
+                            host: configService.get('AUDIT_SERVICE_HOST') || '127.0.0.1',
+                            port: configService.get('AUDIT_SERVICE_PORT') || 3002,
+                        },
+                    }),
                 },
             ]),
         ],

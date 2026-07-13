@@ -27,26 +27,41 @@ let AppController = class AppController {
         let coreStatus = 'unknown';
         let auditStatus = 'unknown';
         try {
-            const coreRes = await (0, rxjs_1.firstValueFrom)(this.coreServiceClient.send({ cmd: 'health.core' }, {}));
+            const coreRes = await (0, rxjs_1.firstValueFrom)(this.coreServiceClient
+                .send({ cmd: 'health.core' }, {})
+                .pipe((0, rxjs_1.timeout)(2000)));
             coreStatus = coreRes.status;
         }
-        catch (e) {
+        catch (_e) {
             coreStatus = 'down';
         }
         try {
-            const auditRes = await (0, rxjs_1.firstValueFrom)(this.auditServiceClient.send({ cmd: 'health.audit' }, {}));
+            const auditRes = await (0, rxjs_1.firstValueFrom)(this.auditServiceClient
+                .send({ cmd: 'health.audit' }, {})
+                .pipe((0, rxjs_1.timeout)(2000)));
             auditStatus = auditRes.status;
         }
-        catch (e) {
+        catch (_e) {
             auditStatus = 'down';
         }
+        if (coreStatus === 'down') {
+            throw new common_1.HttpException({
+                status: 'unavailable',
+                service: 'api-gateway',
+                dependencies: {
+                    coreService: coreStatus,
+                    auditService: auditStatus,
+                },
+            }, common_1.HttpStatus.SERVICE_UNAVAILABLE);
+        }
+        const isOk = coreStatus === 'ok' && auditStatus === 'ok';
         return {
-            status: 'ok',
+            status: isOk ? 'ok' : 'degraded',
             service: 'api-gateway',
             dependencies: {
                 coreService: coreStatus,
                 auditService: auditStatus,
-            }
+            },
         };
     }
 };

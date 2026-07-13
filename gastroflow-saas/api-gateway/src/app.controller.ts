@@ -1,6 +1,25 @@
-import { Controller, Get, Inject } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  HttpException,
+  HttpStatus,
+  Inject,
+} from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
+
+interface ServiceHealthResponse {
+  status: string;
+}
+
+interface HealthCheckResult {
+  status: 'ok' | 'degraded' | 'unavailable';
+  service: string;
+  dependencies: {
+    coreService: string;
+    auditService: string;
+  };
+}
 
 @Controller()
 export class AppController {
@@ -10,31 +29,55 @@ export class AppController {
   ) {}
 
   @Get('health')
-  async getHealth() {
+  async getHealth(): Promise<HealthCheckResult> {
     let coreStatus = 'unknown';
     let auditStatus = 'unknown';
 
     try {
-      const coreRes = await firstValueFrom(this.coreServiceClient.send({ cmd: 'health.core' }, {}));
+      const coreRes = await firstValueFrom<ServiceHealthResponse>(
+        this.coreServiceClient
+          .send<ServiceHealthResponse>({ cmd: 'health.core' }, {})
+          .pipe(timeout(2000)),
+      );
       coreStatus = coreRes.status;
-    } catch (e) {
+    } catch {
       coreStatus = 'down';
     }
 
     try {
-      const auditRes = await firstValueFrom(this.auditServiceClient.send({ cmd: 'health.audit' }, {}));
+      const auditRes = await firstValueFrom<ServiceHealthResponse>(
+        this.auditServiceClient
+          .send<ServiceHealthResponse>({ cmd: 'health.audit' }, {})
+          .pipe(timeout(2000)),
+      );
       auditStatus = auditRes.status;
-    } catch (e) {
+    } catch {
       auditStatus = 'down';
     }
 
+    if (coreStatus === 'down') {
+      throw new HttpException(
+        {
+          status: 'unavailable',
+          service: 'api-gateway',
+          dependencies: {
+            coreService: coreStatus,
+            auditService: auditStatus,
+          },
+        } satisfies HealthCheckResult,
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
+
+    const isOk = coreStatus === 'ok' && auditStatus === 'ok';
+
     return {
-      status: 'ok',
+      status: isOk ? 'ok' : 'degraded',
       service: 'api-gateway',
       dependencies: {
         coreService: coreStatus,
         auditService: auditStatus,
-      }
+      },
     };
   }
 }
