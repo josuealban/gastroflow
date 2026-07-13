@@ -1,9 +1,8 @@
 import {
   Controller,
   Get,
-  HttpException,
-  HttpStatus,
   Inject,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom, timeout } from 'rxjs';
@@ -37,17 +36,14 @@ export class AppController {
     ]);
 
     if (coreStatus === 'down') {
-      throw new HttpException(
-        {
-          status: 'unavailable',
-          service: 'api-gateway',
-          dependencies: {
-            core: 'down',
-            audit: auditStatus,
-          },
-        } satisfies HealthCheckResult,
-        HttpStatus.SERVICE_UNAVAILABLE,
-      );
+      throw new ServiceUnavailableException({
+        status: 'unavailable',
+        service: 'api-gateway',
+        dependencies: {
+          core: 'down',
+          audit: auditStatus,
+        },
+      } satisfies HealthCheckResult);
     }
 
     const isOk = coreStatus === 'up' && auditStatus === 'up';

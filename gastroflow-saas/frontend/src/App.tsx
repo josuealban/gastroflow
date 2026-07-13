@@ -57,10 +57,10 @@ function App() {
   const generalStatus = isChecking
     ? 'Conectando con los servicios...'
     : health.status === 'ok'
-      ? 'Sistema operativo.'
+      ? 'Sistema operativo'
       : health.status === 'degraded'
-        ? 'Operación parcial.'
-        : 'API principal no disponible.';
+        ? 'Operación parcial'
+        : 'API principal no disponible';
 
   return (
     <main className="status-page">
@@ -68,7 +68,7 @@ function App() {
         <p className="eyebrow">Plataforma de gestión</p>
         <h1>GastroFlow</h1>
         <p className="description">
-          Una base tecnológica para administrar restaurantes y sus sucursales.
+          Plataforma de gestión para restaurantes y sucursales
         </p>
 
         <div className={`summary summary--${health.status}`}>

@@ -109,16 +109,17 @@ describe('AppController', () => {
     mockCoreClient.send.mockReturnValue(NEVER);
     mockAuditClient.send.mockReturnValue(of({ status: 'ok' }));
 
-    const healthPromise = appController.getHealth();
-    await jest.advanceTimersByTimeAsync(2000);
-
-    await expect(healthPromise).rejects.toMatchObject({
-      status: HttpStatus.SERVICE_UNAVAILABLE,
-      response: {
-        status: 'unavailable',
-        dependencies: { core: 'down', audit: 'up' },
+    const expectation = expect(appController.getHealth()).rejects.toMatchObject(
+      {
+        status: HttpStatus.SERVICE_UNAVAILABLE,
+        response: {
+          status: 'unavailable',
+          dependencies: { core: 'down', audit: 'up' },
+        },
       },
-    });
+    );
+    await jest.advanceTimersByTimeAsync(2000);
+    await expectation;
   });
 
   it('should return degraded after the audit-service timeout', async () => {
@@ -126,14 +127,30 @@ describe('AppController', () => {
     mockCoreClient.send.mockReturnValue(of({ status: 'ok' }));
     mockAuditClient.send.mockReturnValue(NEVER);
 
-    const healthPromise = appController.getHealth();
-    await jest.advanceTimersByTimeAsync(2000);
-
-    await expect(healthPromise).resolves.toEqual({
+    const expectation = expect(appController.getHealth()).resolves.toEqual({
       status: 'degraded',
       service: 'api-gateway',
       dependencies: { core: 'up', audit: 'down' },
     });
+    await jest.advanceTimersByTimeAsync(2000);
+    await expectation;
+  });
+
+  it('should not expose internal dependency errors', async () => {
+    mockCoreClient.send.mockReturnValue(
+      throwError(() => new Error('sensitive internal detail')),
+    );
+    mockAuditClient.send.mockReturnValue(of({ status: 'ok' }));
+
+    try {
+      await appController.getHealth();
+      throw new Error('Expected the health check to fail');
+    } catch (error: unknown) {
+      const response = (error as HttpException).getResponse();
+      expect(JSON.stringify(response)).not.toContain(
+        'sensitive internal detail',
+      );
+    }
   });
 
   it('should query the expected TCP message patterns', async () => {

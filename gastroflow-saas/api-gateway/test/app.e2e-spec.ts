@@ -70,11 +70,14 @@ describe('AppController (e2e)', () => {
       throwError(() => new Error('audit unavailable')),
     );
 
-    await request(app.getHttpServer()).get('/api/v1/health').expect(200).expect({
-      status: 'degraded',
-      service: 'api-gateway',
-      dependencies: { core: 'up', audit: 'down' },
-    });
+    await request(app.getHttpServer())
+      .get('/api/v1/health')
+      .expect(200)
+      .expect({
+        status: 'degraded',
+        service: 'api-gateway',
+        dependencies: { core: 'up', audit: 'down' },
+      });
   });
 
   it('GET /api/v1/health returns 503 when core is down', async () => {
@@ -82,10 +85,13 @@ describe('AppController (e2e)', () => {
       throwError(() => new Error('core unavailable')),
     );
 
-    await request(app.getHttpServer()).get('/api/v1/health').expect(503).expect({
-      status: 'unavailable',
-      service: 'api-gateway',
-      dependencies: { core: 'down', audit: 'up' },
-    });
+    await request(app.getHttpServer())
+      .get('/api/v1/health')
+      .expect(503)
+      .expect({
+        status: 'unavailable',
+        service: 'api-gateway',
+        dependencies: { core: 'down', audit: 'up' },
+      });
   });
 });
