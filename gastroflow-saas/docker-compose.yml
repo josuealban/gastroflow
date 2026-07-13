@@ -1,51 +1,22 @@
-version: '3.8'
 services:
-  postgres-control:
-    image: postgres:15
+  postgres:
+    image: postgres:18-alpine
     environment:
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: rootpassword
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: gastroflow_control
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
-      - control_data:/var/lib/postgresql/data
-
-  postgres-audit:
-    image: postgres:15
-    environment:
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: rootpassword
-      POSTGRES_DB: gastroflow_audit
-    ports:
-      - "5433:5432"
-    volumes:
-      - audit_data:/var/lib/postgresql/data
-
-  postgres-branch-centro:
-    image: postgres:15
-    environment:
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: rootpassword
-      POSTGRES_DB: gastroflow_demo_centro
-    ports:
-      - "5434:5432"
-    volumes:
-      - branch_centro_data:/var/lib/postgresql/data
-
-  postgres-branch-norte:
-    image: postgres:15
-    environment:
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: rootpassword
-      POSTGRES_DB: gastroflow_demo_norte
-    ports:
-      - "5435:5432"
-    volumes:
-      - branch_norte_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d gastroflow_control"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
 
 volumes:
-  control_data:
-  audit_data:
-  branch_centro_data:
-  branch_norte_data:
+  postgres_data:

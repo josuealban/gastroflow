@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "GastroFlow SaaS Root",
   "scripts": {
+    "db:up": "docker compose up -d --wait postgres",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs -f postgres",
+    "db:reset": "docker compose down -v",
     "start:all": "concurrently \"npm run start:api\" \"npm run start:core\" \"npm run start:audit\" \"npm run start:frontend\"",
     "start:api": "cd api-gateway && npm run start:dev",
     "start:core": "cd core-service && npm run start:dev",
