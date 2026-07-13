@@ -1,4 +1,5 @@
-import axios, { AxiosInstance } from 'axios';
+import axios from 'axios';
+import type { AxiosInstance } from 'axios';
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: (import.meta.env.VITE_API_URL as string) || 'http://localhost:3000/api/v1',
