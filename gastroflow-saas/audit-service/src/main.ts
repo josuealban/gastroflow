@@ -3,7 +3,7 @@ import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
 
-async function bootstrap() {
+async function bootstrap(): Promise<void> {
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(AppModule, {
     transport: Transport.TCP,
     options: {
@@ -17,4 +17,4 @@ async function bootstrap() {
   console.log(`Audit Service listening on ${host}:${port}`);
   await app.listen();
 }
-bootstrap();
+void bootstrap();
