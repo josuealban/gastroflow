@@ -1,32 +1,32 @@
-# React + TypeScript + Vite
+# Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Cliente temporal de GastroFlow creado con React, TypeScript y Vite. En esta fase muestra el estado del Gateway, Core y Audit; todavía no es el panel administrativo completo.
 
-Currently, two official plugins are available:
+## Puerto y API
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Desarrollo: `http://localhost:5173`
+- Consulta actual: `GET /health`, resuelta contra la base configurada en `VITE_API_URL`.
 
-## React Compiler
+## Variables de entorno
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```env
+VITE_API_URL=http://localhost:3000/api/v1
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Copiar `.env.example` a `.env` para desarrollo local. Vite expone al navegador las variables con prefijo `VITE_`, por lo que no deben contener secretos.
+
+## Comandos
+
+```bash
+npm install
+npm run dev
+npm run lint
+npm run build
+npm run preview
+```
+
+Este proyecto no tiene una suite automatizada configurada todavía; `lint` y `build` son las verificaciones actuales.
+
+## Estado actual
+
+Existe una pantalla temporal en español y un cliente Axios centralizado con timeout de 5000 ms. No hay autenticación, RBAC ni módulos de inventario, pedidos o pagos.

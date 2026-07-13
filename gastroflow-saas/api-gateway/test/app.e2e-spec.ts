@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { AppModule } from './../src/app.module';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -42,6 +42,15 @@ describe('AppController (e2e)', () => {
     await app.close();
   });
 
+  beforeEach(() => {
+    mockCoreClient.send.mockReturnValue(of({ status: 'ok' }));
+    mockAuditClient.send.mockReturnValue(of({ status: 'ok' }));
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
   it('GET /api/v1/health returns ok when both services are up', async () => {
     await request(app.getHttpServer())
       .get('/api/v1/health')
@@ -50,9 +59,33 @@ describe('AppController (e2e)', () => {
         status: 'ok',
         service: 'api-gateway',
         dependencies: {
-          coreService: 'ok',
-          auditService: 'ok',
+          core: 'up',
+          audit: 'up',
         },
       });
+  });
+
+  it('GET /api/v1/health returns degraded when audit is down', async () => {
+    mockAuditClient.send.mockReturnValue(
+      throwError(() => new Error('audit unavailable')),
+    );
+
+    await request(app.getHttpServer()).get('/api/v1/health').expect(200).expect({
+      status: 'degraded',
+      service: 'api-gateway',
+      dependencies: { core: 'up', audit: 'down' },
+    });
+  });
+
+  it('GET /api/v1/health returns 503 when core is down', async () => {
+    mockCoreClient.send.mockReturnValue(
+      throwError(() => new Error('core unavailable')),
+    );
+
+    await request(app.getHttpServer()).get('/api/v1/health').expect(503).expect({
+      status: 'unavailable',
+      service: 'api-gateway',
+      dependencies: { core: 'down', audit: 'up' },
+    });
   });
 });

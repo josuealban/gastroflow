@@ -1,92 +1,102 @@
-import { useEffect, useState } from 'react';
-import apiClient from './api/client';
+import { useCallback, useEffect, useState } from 'react';
+import { apiClient } from './api/client';
 import './App.css';
 
-interface DependencyStatus {
-  coreService: string;
-  auditService: string;
-}
+type ServiceStatus = 'up' | 'down';
 
 interface HealthResponse {
   status: 'ok' | 'degraded' | 'unavailable';
-  service: string;
-  dependencies: DependencyStatus;
+  service: 'api-gateway';
+  dependencies: {
+    core: ServiceStatus;
+    audit: ServiceStatus;
+  };
 }
 
-function App() {
-  const [health, setHealth] = useState<HealthResponse | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+interface ApiFailure {
+  response?: {
+    data?: HealthResponse;
+  };
+}
 
-  useEffect(() => {
-    setLoading(true);
-    setErrorMsg(null);
-    apiClient.get<HealthResponse>('/health')
-      .then((response) => {
-        setHealth(response.data);
-      })
-      .catch((err: Error) => {
-        setErrorMsg(err.message);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+const unavailableHealth: HealthResponse = {
+  status: 'unavailable',
+  service: 'api-gateway',
+  dependencies: { core: 'down', audit: 'down' },
+};
+
+function App() {
+  const [health, setHealth] = useState<HealthResponse>(unavailableHealth);
+  const [gatewayStatus, setGatewayStatus] = useState<ServiceStatus>('down');
+  const [isChecking, setIsChecking] = useState(true);
+
+  const checkHealth = useCallback(async () => {
+    setIsChecking(true);
+
+    try {
+      const response = await apiClient.get<HealthResponse>('/health');
+      setHealth(response.data);
+      setGatewayStatus('up');
+    } catch (error: unknown) {
+      const gatewayResponse = (error as ApiFailure).response?.data;
+      setHealth(gatewayResponse ?? unavailableHealth);
+      setGatewayStatus(gatewayResponse ? 'up' : 'down');
+
+      if (import.meta.env.DEV) {
+        console.error('No fue posible completar la comprobación de salud.', error);
+      }
+    } finally {
+      setIsChecking(false);
+    }
   }, []);
 
-  const getStatusText = (status: 'ok' | 'degraded' | 'unavailable') => {
-    if (status === 'ok') return 'Sistema operativo';
-    if (status === 'degraded') return 'Operación parcial';
-    return 'API principal no disponible';
-  };
+  useEffect(() => {
+    void checkHealth();
+  }, [checkHealth]);
 
-  const getStatusColor = (status: 'ok' | 'degraded' | 'unavailable') => {
-    if (status === 'ok') return '#10b981'; // Green
-    if (status === 'degraded') return '#f59e0b'; // Amber
-    return '#ef4444'; // Red
-  };
+  const generalStatus = isChecking
+    ? 'Conectando con los servicios...'
+    : health.status === 'ok'
+      ? 'Sistema operativo.'
+      : health.status === 'degraded'
+        ? 'Operación parcial.'
+        : 'API principal no disponible.';
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>GastroFlow SaaS</h1>
-        <p>Página Temporal de Monitoreo de Salud</p>
-        
-        <div style={{ marginTop: '20px', padding: '25px', border: '1px solid #333', borderRadius: '12px', backgroundColor: '#1e1e1e', color: '#fff', width: '350px', textAlign: 'left', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>
-          <h2 style={{ fontSize: '1.2rem', marginBottom: '15px', borderBottom: '1px solid #444', paddingBottom: '8px' }}>Estado de los Servicios:</h2>
-          
-          {loading ? (
-            <p style={{ color: '#9ca3af' }}>Conectando...</p>
-          ) : errorMsg ? (
-            <div>
-              <p style={{ color: '#ef4444', fontWeight: 'bold' }}>Error de Conexión</p>
-              <p style={{ color: '#9ca3af', fontSize: '0.9rem' }}>{errorMsg}</p>
-            </div>
-          ) : health ? (
-            <div>
-              <p>
-                Estado General: <strong style={{ color: getStatusColor(health.status) }}>{getStatusText(health.status)}</strong>
-              </p>
-              <p style={{ fontSize: '0.9rem', color: '#9ca3af' }}>Servicio: {health.service}</p>
-              
-              <div style={{ marginTop: '15px', paddingTop: '10px', borderTop: '1px solid #333' }}>
-                <p style={{ fontSize: '0.95rem', fontWeight: 'bold', marginBottom: '5px' }}>Dependencias:</p>
-                <ul style={{ listStyleType: 'none', paddingLeft: 0, margin: 0, fontSize: '0.85rem' }}>
-                  <li style={{ margin: '4px 0' }}>
-                    Core Service: <strong style={{ color: health.dependencies.coreService === 'ok' || health.dependencies.coreService === 'up' ? '#10b981' : '#ef4444' }}>
-                      {health.dependencies.coreService === 'ok' || health.dependencies.coreService === 'up' ? 'Activo' : 'Inactivo'}
-                    </strong>
-                  </li>
-                  <li style={{ margin: '4px 0' }}>
-                    Audit Service: <strong style={{ color: health.dependencies.auditService === 'ok' || health.dependencies.auditService === 'up' ? '#10b981' : '#ef4444' }}>
-                      {health.dependencies.auditService === 'ok' || health.dependencies.auditService === 'up' ? 'Activo' : 'Inactivo'}
-                    </strong>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          ) : null}
+    <main className="status-page">
+      <section className="status-panel" aria-live="polite">
+        <p className="eyebrow">Plataforma de gestión</p>
+        <h1>GastroFlow</h1>
+        <p className="description">
+          Una base tecnológica para administrar restaurantes y sus sucursales.
+        </p>
+
+        <div className={`summary summary--${health.status}`}>
+          <span className="summary__indicator" aria-hidden="true" />
+          <strong>{generalStatus}</strong>
         </div>
-      </header>
+
+        <dl className="services">
+          <ServiceRow label="Gateway" status={gatewayStatus} />
+          <ServiceRow label="Core" status={health.dependencies.core} />
+          <ServiceRow label="Audit" status={health.dependencies.audit} />
+        </dl>
+
+        <button type="button" onClick={() => void checkHealth()} disabled={isChecking}>
+          Comprobar nuevamente
+        </button>
+      </section>
+    </main>
+  );
+}
+
+function ServiceRow({ label, status }: { label: string; status: ServiceStatus }) {
+  return (
+    <div className="service-row">
+      <dt>{label}</dt>
+      <dd className={`service-status service-status--${status}`}>
+        {status === 'up' ? 'Disponible' : 'No disponible'}
+      </dd>
     </div>
   );
 }

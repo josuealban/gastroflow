@@ -8,14 +8,23 @@ async function bootstrap(): Promise<void> {
 
   app.setGlobalPrefix('api/v1');
 
-  const corsOrigin = configService.get<string>('CORS_ORIGIN');
-  if (corsOrigin) {
-    app.enableCors({ origin: corsOrigin === '*' ? true : corsOrigin });
-  } else {
-    app.enableCors();
+  const corsOrigin =
+    configService.get<string>('CORS_ORIGIN') ?? 'http://localhost:5173';
+  app.enableCors({
+    origin: corsOrigin === '*' ? true : corsOrigin,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
+
+  const rawPort = configService.get<string>('PORT') ?? '3000';
+  const port = Number(rawPort);
+  if (!Number.isInteger(port) || port <= 0) {
+    throw new Error(
+      `PORT debe ser un número entero positivo válido. Recibido: ${rawPort}`,
+    );
   }
 
-  const port = configService.get<number>('PORT') ?? 3000;
   await app.listen(port);
 }
 

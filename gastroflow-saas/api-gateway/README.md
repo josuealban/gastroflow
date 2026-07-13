@@ -1,29 +1,15 @@
-# api-gateway
+# API Gateway
 
-Puerta de enlace HTTP del sistema GastroFlow SaaS. Es el único punto de entrada HTTP para todos los clientes (frontend, Postman, integraciones externas).
+Puerta de entrada HTTP de GastroFlow. En la fase inicial expone el estado del sistema y consulta por TCP a `core-service` y `audit-service`.
 
-## Responsabilidades
+## Puerto y endpoint actual
 
-- Exponer la API REST en `http://localhost:3000/api/v1`
-- Validar requests con DTOs y `ValidationPipe`
-- Enrutar solicitudes a `core-service` vía TCP
-- Convertir errores RPC a códigos HTTP apropiados
-- Documentar la API con Swagger en `/api/docs`
-- Gestionar CORS
+- HTTP: `3000`
+- `GET /api/v1/health`: devuelve `ok`, `degraded` o `unavailable` según la disponibilidad de las dependencias.
 
-## Puerto
+El prefijo global es `/api/v1`. Las consultas TCP usan los patrones `{ cmd: 'health.core' }` y `{ cmd: 'health.audit' }`, con un timeout máximo de 2000 ms por dependencia.
 
-```
-HTTP: 3000
-```
-
-## Endpoints
-
-| Método | Ruta | Descripción |
-|--------|------|-------------|
-| GET | `/api/v1/health` | Estado de salud del sistema |
-
-## Variables de Entorno
+## Variables de entorno
 
 ```env
 PORT=3000
@@ -31,24 +17,24 @@ CORE_SERVICE_HOST=127.0.0.1
 CORE_SERVICE_PORT=3001
 AUDIT_SERVICE_HOST=127.0.0.1
 AUDIT_SERVICE_PORT=3002
-CORS_ORIGIN=*
+CORS_ORIGIN=http://localhost:5173
 ```
+
+Copiar `.env.example` a `.env` para desarrollo local. No guardar secretos en el ejemplo.
 
 ## Comandos
 
 ```bash
-npm run start:dev   # Modo desarrollo
-npm run build       # Compilación
-npm run test        # Pruebas unitarias
-npm run test:e2e    # Pruebas e2e
-npm run lint        # Linter
+npm install
+npm run start:dev
+npm run lint
+npm run test
+npm run test:e2e
+npm run build
 ```
 
-## Comunicación
+Las pruebas usan dobles de `ClientProxy`; no requieren iniciar los microservicios.
 
-```
-Frontend/Postman → HTTP → api-gateway → TCP → core-service
-                                      → TCP → audit-service (health only)
-```
+## Estado actual
 
-No se conecta directamente a ninguna base de datos PostgreSQL.
+La comunicación HTTP/TCP y el health check están implementados. No hay Prisma, autenticación JWT, RBAC ni endpoints de inventario, pedidos o pagos.

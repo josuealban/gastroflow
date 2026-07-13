@@ -1,52 +1,34 @@
-# audit-service
+# Audit Service
 
-Microservicio TCP de auditoría de GastroFlow SaaS. Registra eventos de seguridad y operaciones importantes en una base de datos completamente aislada.
+Microservicio TCP reservado para la auditoría de GastroFlow. En la fase inicial únicamente ofrece una señal de salud; el almacenamiento de eventos corresponde a una fase posterior.
 
-## Responsabilidades
+## Puerto y patrón actual
 
-- Recibir eventos de auditoría desde `core-service`
-- Registrar `AuditLog` (operaciones importantes)
-- Registrar `SecurityEvent` (intentos de login, accesos denegados)
-- Mantener su propia base `gastroflow_audit` aislada
+- TCP: `127.0.0.1:3002`
+- `{ cmd: 'health.audit' }`: responde `{ "status": "ok", "service": "audit-service" }`.
 
-## Puerto
-
-```
-TCP: 3002
-```
-
-## Patrones TCP
-
-| Patrón | Descripción |
-|--------|-------------|
-| `{ cmd: 'health.audit' }` | Estado de salud del servicio |
-
-## Variables de Entorno
+## Variables de entorno
 
 ```env
-PORT=3002
 AUDIT_SERVICE_HOST=127.0.0.1
 AUDIT_SERVICE_PORT=3002
 ```
 
-## Base de Datos
-
-- `gastroflow_audit` — Base de auditoría exclusiva de este servicio
+Copiar `.env.example` a `.env` para desarrollo local. Los ejemplos no deben contener secretos.
 
 ## Comandos
 
 ```bash
-npm run start:dev   # Modo desarrollo
-npm run build       # Compilación
-npm run test        # Pruebas unitarias
-npm run test:e2e    # Pruebas e2e
-npm run lint        # Linter
+npm install
+npm run start:dev
+npm run lint
+npm run test
+npm run test:e2e
+npm run build
 ```
 
-## Comunicación
+Las pruebas actuales validan la respuesta del patrón de salud sin requerir otros servicios.
 
-```
-core-service → TCP → audit-service → SQL → gastroflow_audit
-```
+## Estado actual
 
-Este servicio no contiene lógica de productos, pedidos, mesas ni pagos. Solo auditoría.
+El servicio carga variables con `@nestjs/config`, valida su puerto y escucha mediante TCP. Todavía no persiste registros, no usa Prisma y no implementa eventos de seguridad.

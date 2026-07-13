@@ -4,20 +4,38 @@ import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
 
 async function bootstrap(): Promise<void> {
+  // 1. Crear un contexto de aplicación temporal para cargar ConfigService
+  const context = await NestFactory.createApplicationContext(AppModule);
+  const configService = context.get(ConfigService);
+
+  const host = configService.get<string>('AUDIT_SERVICE_HOST') || '127.0.0.1';
+  const rawPort = configService.get<string>('AUDIT_SERVICE_PORT') ?? '3002';
+  const port = Number(rawPort);
+
+  if (!Number.isInteger(port) || port <= 0) {
+    await context.close();
+    throw new Error(
+      `AUDIT_SERVICE_PORT debe ser un número entero positivo válido. Recibido: ${rawPort}`,
+    );
+  }
+
+  // Cerrar el contexto temporal para liberar recursos antes de levantar el microservicio
+  await context.close();
+
+  // 2. Crear el microservicio TCP con los valores validados
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(
     AppModule,
     {
       transport: Transport.TCP,
       options: {
-        host: process.env.AUDIT_SERVICE_HOST || '127.0.0.1',
-        port: Number(process.env.AUDIT_SERVICE_PORT) || 3002,
+        host,
+        port,
       },
     },
   );
-  const configService = app.get(ConfigService);
-  const host = configService.get<string>('AUDIT_SERVICE_HOST') || '127.0.0.1';
-  const port = configService.get<number>('AUDIT_SERVICE_PORT') || 3002;
+
   console.log(`Audit Service listening on ${host}:${port}`);
   await app.listen();
 }
+
 void bootstrap();
