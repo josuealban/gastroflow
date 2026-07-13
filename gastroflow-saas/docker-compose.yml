@@ -1,0 +1,51 @@
+version: '3.8'
+services:
+  postgres-control:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: rootpassword
+      POSTGRES_DB: gastroflow_control
+    ports:
+      - "5432:5432"
+    volumes:
+      - control_data:/var/lib/postgresql/data
+
+  postgres-audit:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: rootpassword
+      POSTGRES_DB: gastroflow_audit
+    ports:
+      - "5433:5432"
+    volumes:
+      - audit_data:/var/lib/postgresql/data
+
+  postgres-branch-centro:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: rootpassword
+      POSTGRES_DB: gastroflow_demo_centro
+    ports:
+      - "5434:5432"
+    volumes:
+      - branch_centro_data:/var/lib/postgresql/data
+
+  postgres-branch-norte:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: rootpassword
+      POSTGRES_DB: gastroflow_demo_norte
+    ports:
+      - "5435:5432"
+    volumes:
+      - branch_norte_data:/var/lib/postgresql/data
+
+volumes:
+  control_data:
+  audit_data:
+  branch_centro_data:
+  branch_norte_data:

@@ -1,0 +1,16 @@
+{
+  "name": "gastroflow-saas",
+  "version": "1.0.0",
+  "description": "GastroFlow SaaS Root",
+  "scripts": {
+    "start:all": "concurrently \"npm run start:api\" \"npm run start:core\" \"npm run start:audit\" \"npm run start:frontend\"",
+    "start:api": "cd api-gateway && npm run start:dev",
+    "start:core": "cd core-service && npm run start:dev",
+    "start:audit": "cd audit-service && npm run start:dev",
+    "start:frontend": "cd frontend && npm run dev",
+    "build:all": "cd api-gateway && npm run build && cd ../core-service && npm run build && cd ../audit-service && npm run build && cd ../frontend && npm run build"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
