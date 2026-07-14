@@ -1,18 +1,57 @@
-# Arquitectura de GastroFlow
+# Arquitectura definitiva
 
-GastroFlow conserva cuatro proyectos independientes: React/Vite, API Gateway HTTP, Core TCP y Audit TCP. Cada uno mantiene package, build y configuración propios.
+## Vista de contenedores
 
 ```mermaid
-flowchart TD
-  F["Frontend :5173"] -->|"HTTP /api/v1"| G["API Gateway :3000"]
-  G -->|"TCP"| C["Core :3001"]
-  G -->|"TCP health"| A["Audit :3002"]
-  C --> CONTROL[("gastroflow_control")]
-  C --> CENTRO[("gastroflow_demo_centro")]
-  C --> NORTE[("gastroflow_demo_norte")]
-  A --> AUDIT[("gastroflow_audit")]
+flowchart LR
+  U["Usuario"] --> F["Frontend React/Vite :5173"]
+  F -->|"HTTP/JSON /api/v1"| G["API Gateway NestJS :3000"]
+  G -->|"TCP"| C["Core Service NestJS :3001"]
+  G -->|"TCP"| O["Operations Service NestJS :3002"]
+  C --> DB0[("gastroflow_control")]
+  O --> SEL{"Sucursal activa"}
+  SEL --> DB1[("base sucursal A")]
+  SEL --> DB2[("base sucursal B")]
+  SEL --> DBN[("base sucursal N")]
 ```
 
-El Gateway no depende de Prisma. Core consulta Control para seleccionar una base operacional y mantiene un cliente cacheado por sucursal. Audit sólo accede a su propia base. Las bases pueden vivir en un servidor PostgreSQL de desarrollo, pero son bases lógicas y físicas distintas.
+## Límites
 
-La Fase 2 define modelos de usuarios, productos, inventario, pedidos y pagos para evolución futura; no expone aún sus endpoints ni afirma que esa lógica esté implementada.
+### API Gateway
+
+Es la única superficie HTTP para frontend y Postman. Versionará recursos bajo `/api/v1`, transformará solicitudes HTTP en mensajes TCP y compondrá respuestas. No usa Prisma ni mantiene conexión directa con PostgreSQL.
+
+### Core Service
+
+Es dueño de `gastroflow_control`. Gestionará restaurantes, sucursales, planes, suscripciones, usuarios, perfiles de empleado, roles, permisos, membresías y selección autorizada de sucursal. La autenticación se implementará en fases posteriores.
+
+### Operations Service
+
+Es dueño del schema operacional y de la selección dinámica de conexión. Cada solicitud funcional deberá llegar con una identidad de sucursal previamente autorizada. El servicio no creará una aplicación distinta por sucursal.
+
+### Frontend
+
+Presenta una sola aplicación para todos los restaurantes. Tras iniciar sesión mostrará las sucursales autorizadas, permitirá elegir una y usará exclusivamente el Gateway.
+
+## Flujo futuro de selección
+
+1. El usuario se autentica.
+2. Core devuelve las sucursales permitidas.
+3. El usuario envía `POST /api/v1/session/branch`.
+4. Core valida `UserBranch`, estado y roles.
+5. Se emite o actualiza un contexto con `userId`, `restaurantId`, `branchId`, roles y permisos.
+6. Operations resuelve la conexión de esa sucursal.
+7. Toda operación posterior se ejecuta contra una sola base operacional.
+
+## Estado observado
+
+La comunicación HTTP/TCP y los health checks existen. La persistencia del árbol de trabajo no coincide: usa bases globales `gastroflow_personal`, `gastroflow_clientes` y `gastroflow_operaciones`, más filtros `restaurantId`. Debe rediseñarse en Fase 2.
+
+## Restricciones arquitectónicas
+
+- Sin Nx, monorepo NestJS ni carpeta `apps`.
+- Sin servicios, Gateway o frontend por sucursal.
+- Sin acceso del frontend a PostgreSQL.
+- Sin `branchId` repetido en todas las tablas operacionales.
+- Sin clonación de historial al crear una sucursal.
+- Sin secretos de conexión enviados por clientes.

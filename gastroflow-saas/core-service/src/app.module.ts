@@ -1,16 +1,15 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
-import { BranchDatabaseModule } from './database/branch/branch-database.module';
+import { CustomersPrismaModule } from './database/customers/customers-prisma.module';
+import { PersonalPrismaModule } from './database/personal/personal-prisma.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-    }),
-    BranchDatabaseModule,
+    ConfigModule.forRoot({ isGlobal: true }),
+    PersonalPrismaModule,
+    CustomersPrismaModule,
   ],
   controllers: [AppController],
-  providers: [],
 })
 export class AppModule {}

@@ -6,13 +6,14 @@
     "db:up": "docker compose up -d --wait postgres",
     "db:down": "docker compose down",
     "db:logs": "docker compose logs -f postgres",
-    "db:reset": "docker compose down -v",
-    "start:all": "concurrently \"npm run start:api\" \"npm run start:core\" \"npm run start:audit\" \"npm run start:frontend\"",
+    "db:reset": "docker compose down -v && docker compose up -d --wait postgres",
+    "verify:tenant-isolation": "cd operations-service && npm run verify:tenant-isolation",
+    "start:all": "concurrently \"npm run start:api\" \"npm run start:core\" \"npm run start:operations\" \"npm run start:frontend\"",
     "start:api": "cd api-gateway && npm run start:dev",
     "start:core": "cd core-service && npm run start:dev",
-    "start:audit": "cd audit-service && npm run start:dev",
+    "start:operations": "cd operations-service && npm run start:dev",
     "start:frontend": "cd frontend && npm run dev",
-    "build:all": "cd api-gateway && npm run build && cd ../core-service && npm run build && cd ../audit-service && npm run build && cd ../frontend && npm run build"
+    "build:all": "cd api-gateway && npm run build && cd ../core-service && npm run build && cd ../operations-service && npm run build && cd ../frontend && npm run build"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

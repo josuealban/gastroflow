@@ -1,180 +1,91 @@
-# GastroFlow SaaS — Especificaciones del Proyecto
+# GastroFlow SaaS — Especificación congelada
 
-## Problema
+## Objetivo general
 
-Las empresas de restauración con múltiples sucursales carecen de un sistema unificado que aísle los datos operativos por sucursal, gestione roles y permisos específicos por ubicación, y proporcione auditoría centralizada de seguridad.
+Construir una plataforma SaaS basada en servicios independientes para gestionar restaurantes, sus sucursales y la operación aislada de cada sucursal.
 
-## Objetivo General
+## Alcance organizacional
 
-Desarrollar un sistema SaaS para la administración integral de restaurantes con múltiples sucursales, aplicando los conocimientos adquiridos durante el ciclo académico en: HTTP, APIs RESTful, microservicios, bases de datos relacionales, autenticación, autorización y desarrollo frontend moderno.
+- Una plataforma atiende varios restaurantes.
+- Cada restaurante puede tener una o varias sucursales.
+- Una sucursal es una entidad de negocio dentro de la plataforma.
+- Un usuario puede pertenecer a varias sucursales y tener roles diferentes en cada una.
+- La selección de sucursal activa delimitará las operaciones visibles.
 
-## Objetivos Específicos
+## Proyectos definitivos
 
-1. Implementar una arquitectura de microservicios con comunicación TCP.
-2. Aplicar el patrón de base de datos independiente por sucursal (database-per-tenant).
-3. Implementar autenticación JWT con bcrypt y Passport.
-4. Implementar RBAC con roles: OWNER, MANAGER, WAITER, CASHIER, INVENTORY_MANAGER.
-5. Gestionar inventario con trazabilidad de movimientos.
-6. Implementar transacciones ACID para pedidos y pagos.
-7. Documentar la API con Swagger.
-8. Desarrollar un frontend React con diseño profesional.
+| Proyecto | Transporte | Puerto | Responsabilidad |
+| --- | --- | ---: | --- |
+| `api-gateway` | HTTP | 3000 | Entrada del frontend y Postman; futura API `/api/v1` |
+| `core-service` | TCP | 3001 | Control central, identidad, personal y acceso a sucursales |
+| `operations-service` | TCP | 3002 | Datos operacionales de la base correspondiente a la sucursal activa |
+| `frontend` | HTTP hacia Gateway | 5173 | Experiencia web React/Vite |
 
-## Alcance
+Cada proyecto conserva su propio `package.json`. No se usará Nx, carpeta `apps` ni monorepo NestJS.
 
-### Incluido
+## Persistencia definitiva
 
-- Gestión de empresas y sucursales
-- Autenticación y autorización (RBAC)
-- Gestión de productos y categorías
-- Gestión de mesas y reservaciones
-- Gestión de pedidos y pagos
-- Control de inventario y proveedores
-- Auditoría de seguridad
-- Panel de administración React
+### Base central
 
-### Excluido
+`gastroflow_control` contendrá `Restaurant`, `Branch`, `Plan`, `Subscription`, `User`, `EmployeeProfile`, `Role`, `Permission`, `UserRole`, `RolePermission`, `UserBranch`, `UserBranchRole` y `RefreshToken`.
 
-- Aplicación móvil
-- Integración con pasarelas de pago reales
-- Sistema de fidelización de clientes
-- Módulo de contabilidad avanzada
+### Bases operacionales
 
-## Actores del Sistema
+Cada sucursal tendrá una base PostgreSQL propia creada desde el mismo schema operacional. La base representa a la sucursal; por ello, las tablas operacionales no necesitan `branchId`.
 
-| Actor             | Descripción                         |
-| ----------------- | ----------------------------------- |
-| Platform Admin    | Administrador de la plataforma SaaS |
-| Owner             | Dueño de la empresa restaurantera   |
-| Manager           | Gerente de sucursal                 |
-| Waiter            | Mesero (toma pedidos)               |
-| Cashier           | Cajero (procesa pagos)              |
-| Inventory Manager | Responsable de inventario           |
+El schema operacional incluirá clientes, reservaciones, categorías, platillos, mesas, inventario, proveedores, compras, pedidos, pagos, facturas, configuración tributaria, secuencia y `OutboxEvent`.
 
-## Arquitectura
+## Alta futura de una sucursal
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      CLIENTE                                │
-│              React + Vite + TypeScript                      │
-│                     Puerto 5173                             │
-└──────────────────────────┬──────────────────────────────────┘
-                           │ HTTP/REST
-                           ▼
-┌──────────────────────────────────────────────────────────────┐
-│                     API GATEWAY                              │
-│              NestJS + Swagger + ValidationPipe               │
-│                     Puerto 3000                              │
-└────────────────────┬─────────────────┬───────────────────────┘
-                     │ TCP             │ TCP (health only)
-                     ▼                 ▼
-┌────────────────────────┐   ┌──────────────────────┐
-│     CORE SERVICE       │   │    AUDIT SERVICE      │
-│  NestJS + Prisma       │   │  NestJS + Prisma     │
-│  Control + Branch DB   │   │  Audit DB            │
-│  Puerto 3001 (TCP)     │   │  Puerto 3002 (TCP)   │
-└────────┬───────────────┘   └──────────┬───────────┘
-         │                              │
-         ▼                              ▼
-┌────────────────────┐      ┌───────────────────────┐
-│ gastroflow_control │      │  gastroflow_audit     │
-│ gastroflow_centro  │      └───────────────────────┘
-│ gastroflow_norte   │
-└────────────────────┘
-```
+`POST /api/v1/branches` recibirá sólo datos de negocio y una plantilla opcional. El backend validará propietario, restaurante, suscripción y límites del plan; creará la sucursal en `PROVISIONING`; generará internamente el nombre y las credenciales; creará la base; aplicará migraciones; copiará catálogos; inicializará operaciones en cero; asignará al propietario; verificará conexión y cambiará a `ACTIVE` o `FAILED`.
 
-## Requisitos Funcionales
+Nunca se enviarán desde el frontend nombres, hosts, puertos, usuarios, contraseñas, URL de base ni claves de cifrado.
 
-### RF-01: Autenticación
+## Copia desde plantilla
 
-- Login por `branchCode` + `email` + `password`
-- JWT de acceso y refresh token
-- Logout con invalidación de refresh token
+Se copiarán categorías, platillos y catálogo de inventario. `currentStock`, costos, daños, pérdidas, secuencia de factura, ventas y dashboard iniciarán en cero. No se copiarán clientes, reservaciones, pedidos, pagos, facturas, historial, compras, movimientos, PDF ni eventos operacionales.
 
-### RF-02: Gestión de Usuarios
+## Funcionalidad futura
 
-- CRUD de usuarios por sucursal
-- Asignación de roles
-- Un usuario puede tener múltiples roles
+- Selección de sucursal: `POST /api/v1/session/branch`, después de verificar pertenencia.
+- Platillos con imagen externa por `imageUrl`; ingredientes opcionales como texto libre; sin recetas obligatorias.
+- Inventario `INGREDIENT`, `CONSUMABLE` y `UTENSIL`, con movimientos auditables y sin WebSockets en el MVP.
+- Personal centralizado y asignado mediante `UserBranch` y `UserBranchRole`.
+- Pedidos con varios platillos y snapshots históricos.
+- Facturas internas generadas desde pedidos, sin borrado físico, con filtros, paginación, archivo lógico y tasa tomada de `TaxConfiguration`.
 
-### RF-03: Gestión de Productos
+## Fuera de la Parte 0
 
-- CRUD de categorías y productos
-- Precios con decimales
-- Disponibilidad por producto
+Prisma definitivo, migraciones, bases, seeds, endpoints funcionales, JWT, Passport, RBAC operativo, registro de sucursales, CRUD de negocio, PDF, despliegue e integración legal con SRI.
 
-### RF-04: Gestión de Mesas
+## Estado de la especificación
 
-- CRUD de mesas por sucursal
-- Estados: AVAILABLE, OCCUPIED, RESERVED, OUT_OF_SERVICE
-- Reservaciones con confirmación
+Esta especificación reemplaza arquitecturas anteriores. El código Prisma actual de tres bases globales es legado no confirmado y deberá tratarse mediante una migración planificada, nunca como cumplimiento de este documento.
 
-### RF-05: Gestión de Pedidos
+## Decisiones definitivas
 
-- Crear pedido asociado a mesa
-- Agregar/modificar/eliminar ítems
-- Flujo: OPEN → IN_PREPARATION → READY → DELIVERED → PAID
+1. GastroFlow es SaaS.
+2. Puede atender varios restaurantes.
+3. Cada restaurante puede tener varias sucursales.
+4. Las sucursales no son microservicios.
+5. Existe una base central `gastroflow_control`.
+6. Cada sucursal tiene su propia base operacional.
+7. Todas utilizan el mismo schema operacional.
+8. API Gateway no usa Prisma.
+9. Core Service administra datos centrales.
+10. Operations Service administra bases operacionales.
+11. Las tablas operacionales no requieren `branchId`.
+12. La nueva sucursal copia catálogos, no historial.
+13. El stock nuevo comienza en cero.
+14. Los platillos pueden copiarse desde una plantilla.
+15. También pueden crearse mediante `Nuevo platillo`.
+16. Las imágenes se almacenan mediante URL.
+17. El personal se almacena centralmente.
+18. Un empleado puede estar en varias sucursales.
+19. Las facturas se generan desde pedidos.
+20. La tarifa tributaria es configurable.
+21. Las facturas se conservan mediante historial.
+22. La integración legal con SRI queda fuera del MVP.
+23. El proyecto debe poder evolucionar a titulación.
 
-### RF-06: Gestión de Pagos
-
-- Múltiples métodos: CASH, CARD, TRANSFER
-- Estados: PENDING, COMPLETED, FAILED, REFUNDED
-- Cierre automático de pedido al pagar
-
-### RF-07: Inventario
-
-- Registro de ingredientes y unidades de medida
-- Movimientos: PURCHASE_ENTRY, SALE_CONSUMPTION, WASTE, ADJUSTMENT
-- Stock mínimo con alertas
-- Gestión de proveedores y compras
-
-### RF-08: Auditoría
-
-- Registro de eventos de seguridad (login, logout, accesos denegados)
-- Registro de operaciones importantes (creación/eliminación de usuarios)
-
-## Requisitos No Funcionales
-
-| Código | Descripción                                                                                    |
-| ------ | ---------------------------------------------------------------------------------------------- |
-| RNF-01 | Cada sucursal usa una base de datos PostgreSQL independiente                                   |
-| RNF-02 | Las contraseñas de usuario se almacenan con bcrypt; la autenticación se implementará en Fase 3 |
-| RNF-03 | Los JWT expiran en 15 minutos; refresh token en 7 días                                         |
-| RNF-04 | La API responde en menos de 500ms en condiciones normales                                      |
-| RNF-05 | Ninguna credencial de base de datos se expone en respuestas HTTP                               |
-| RNF-06 | El código no usa `any` sin justificación documentada                                           |
-
-## Módulos Previstos
-
-| Módulo               | Servicio                 | Estado                                           |
-| -------------------- | ------------------------ | ------------------------------------------------ |
-| Health               | api-gateway, core, audit | ✅ Completo                                      |
-| Auth                 | core-service             | 🔜 Fase 3                                        |
-| Companies & Branches | core-service             | 🟡 Modelo y servicios; verificación DB pendiente |
-| Users & Roles        | core-service             | 🔜 Fase 3                                        |
-| Products             | core-service             | 🔜 Fase 4                                        |
-| Tables               | core-service             | 🔜 Fase 4                                        |
-| Orders               | core-service             | 🔜 Fase 4                                        |
-| Payments             | core-service             | 🔜 Fase 4                                        |
-| Inventory            | core-service             | 🔜 Fase 4                                        |
-| Audit Logs           | audit-service            | 🟡 Modelo Prisma; handlers pendientes            |
-| Frontend Dashboard   | frontend                 | 🔜 Fase 5                                        |
-
-## Bases de Datos
-
-| Base                     | Servicio           | Contenido                                   |
-| ------------------------ | ------------------ | ------------------------------------------- |
-| `gastroflow_control`     | core-service       | Empresas, sucursales, planes, suscripciones |
-| `gastroflow_audit`       | audit-service      | Logs de auditoría y eventos de seguridad    |
-| `gastroflow_demo_centro` | core-service (dyn) | Datos operativos Sucursal Centro            |
-| `gastroflow_demo_norte`  | core-service (dyn) | Datos operativos Sucursal Norte             |
-
-## Fases del Proyecto
-
-| Fase | Descripción                                         | Estado                                             |
-| ---- | --------------------------------------------------- | -------------------------------------------------- |
-| 1    | Estructura base y comunicación entre microservicios | ✅ Completo                                        |
-| 2    | Bases de datos, Prisma ORM y base por sucursal      | 🟡 Implementada; verificación PostgreSQL pendiente |
-| 3    | Autenticación JWT, RBAC y Guards                    | ⬜ Pendiente                                       |
-| 4    | Módulos de negocio completos                        | ⬜ Pendiente                                       |
-| 5    | Frontend React completo                             | ⬜ Pendiente                                       |
-| 6    | Pruebas completas y documentación Swagger           | ⬜ Pendiente                                       |
+Estas decisiones no se cambiarán sin una orden explícita del usuario.

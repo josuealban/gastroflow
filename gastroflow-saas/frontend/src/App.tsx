@@ -68,7 +68,7 @@ function App() {
         <p className="eyebrow">Plataforma de gestión</p>
         <h1>GastroFlow</h1>
         <p className="description">
-          Plataforma de gestión para restaurantes y sucursales
+          Plataforma SaaS de gestión para restaurantes
         </p>
 
         <div className={`summary summary--${health.status}`}>

@@ -1,40 +1,24 @@
-# Modelo de datos
+# Modelo de datos previsto
 
-GastroFlow separa la administración global, la auditoría y la operación de cada sucursal en bases PostgreSQL diferentes.
+## Central — `gastroflow_control`
 
-## Base de control
+`Restaurant` agrupa sucursales, suscripción y usuarios. `Branch` representa una ubicación y su estado de provisionamiento. `User` puede tener `EmployeeProfile`; `UserBranch` registra pertenencia y `UserBranchRole` asigna roles en una sucursal. `RolePermission` compone permisos. `RefreshToken` soportará sesiones futuras.
 
-- `Company` agrupa sucursales y tiene una suscripción.
-- `Branch` registra código, nombre de base y credenciales cifradas. No contiene datos operativos.
-- `Plan` define límites y precio `Decimal`; `Subscription` relaciona una empresa con un plan.
-- `PlatformAdmin` reserva administradores globales con `passwordHash`.
-- `GlobalOutboxEvent` prepara publicación confiable de eventos futuros.
+Modelos previstos: `Restaurant`, `Branch`, `Plan`, `Subscription`, `User`, `EmployeeProfile`, `Role`, `Permission`, `UserRole`, `RolePermission`, `UserBranch`, `UserBranchRole` y `RefreshToken`.
 
-Relaciones: Company 1:N Branch, Company 1:1 Subscription y Plan 1:N Subscription. Las relaciones críticas usan `Restrict`, no cascadas destructivas. `SubscriptionStatus` y `OutboxStatus` modelan sus ciclos de vida.
+## Operacional — una base por sucursal
 
-## Base operacional por sucursal
+- Clientes y reservaciones: `Customer`, `Reservation`.
+- Catálogo y salón: `Category`, `Product`, `RestaurantTable`.
+- Venta: `Order`, `OrderItem`, `Payment`.
+- Facturación interna: `Invoice`, `InvoiceItem`, `InvoiceSequence`, `TaxConfiguration`.
+- Abastecimiento: `InventoryItem`, `InventoryMovement`, `Supplier`, `Purchase`, `PurchaseItem`.
+- Integración confiable: `OutboxEvent`.
 
-- Seguridad futura: `User`, `Role`, `Permission`, `UserRole`, `RolePermission` y `RefreshToken`.
-- Catálogo: `Category`, `Product`, `Recipe` y `RecipeItem`.
-- Sala y clientes: `RestaurantTable`, `Customer` y `Reservation`.
-- Venta futura: `Order`, `OrderItem` y `Payment`.
-- Abastecimiento: `InventoryItem`, `Supplier`, `Purchase`, `PurchaseItem` e `InventoryMovement`.
-- Integración futura: `OutboxEvent`.
+La base ya identifica a la sucursal; sus tablas no necesitan `branchId`. Los UUID de usuarios centrales pueden guardarse como referencias externas sin foreign key entre bases, con validación previa por servicio.
 
-User y Role, y Role y Permission, son relaciones N:M explícitas. Recipe es única por Product y relaciona ingredientes mediante RecipeItem. Los productos con historial, ingredientes con movimientos y entidades financieras usan relaciones restrictivas.
+Los importes y cantidades sensibles a precisión usarán Decimal. Items de pedido y factura guardarán snapshots de nombres y precios para conservar historia.
 
-Los estados de mesas, reservas, pedidos, pagos, compras, inventario y outbox se expresan mediante enums. Importes y cantidades usan `Decimal`; fechas de consulta frecuente, estados y claves foráneas tienen índices.
+## Estado
 
-No existe `branchId` en las tablas operacionales: Centro y Norte son bases físicas distintas con el mismo schema de plantilla.
-
-## Base de auditoría
-
-- `AuditLog` registra acciones con severidad y `externalEventId` único.
-- `SecurityEvent` reserva eventos de autenticación y seguridad.
-- `IntegrationError` registra fallos de integración y su resolución.
-
-Los identificadores externos permiten idempotencia. `AuditSeverity` diferencia INFO, WARNING, ERROR y CRITICAL. Audit no tiene relaciones directas con las otras bases para conservar independencia.
-
-## Normalización
-
-El control no duplica datos operativos; cada sucursal normaliza sus relaciones internas; Audit conserva referencias externas sin claves foráneas distribuidas. Esta decisión evita un acoplamiento transaccional imposible entre bases y deja la propagación futura a los outbox.
+Diseño `DOCUMENTED`. Los schemas actuales del repositorio modelan otra arquitectura y no son la implementación de este documento.
