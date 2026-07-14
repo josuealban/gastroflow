@@ -1,21 +1,11 @@
-# Prisma en GastroFlow
+# Prisma — diseño pendiente de Fase 2
 
-La Fase 2 usa Prisma ORM 7.8.0, el generador `prisma-client`, salida explícita y `@prisma/adapter-pg`.
+Prisma será el ORM para PostgreSQL, con un schema central y un schema operacional reutilizable. Core tendrá un cliente de control. Operations necesitará crear o reutilizar clientes según la sucursal activa, sin aceptar URL de base desde el frontend.
 
-## Schemas y clientes
+El ciclo de conexión deberá cubrir inicialización, límites de caché, expiración, invalidación, cierre y errores sanitizados. Los clientes se generarán sólo desde schemas aprobados y nunca se editarán manualmente.
 
-- Control: `core-service/prisma/control/schema.prisma` → `src/generated/control-client`.
-- Sucursal: `core-service/prisma/branch/schema.prisma` → `src/generated/branch-client`.
-- Audit: `audit-service/prisma/schema.prisma` → `src/generated/audit-client`.
+## Estado observado
 
-Los clientes no se generan en `node_modules`. Cada Prisma Config define schema, migraciones, seed y datasource para el CLI. En ejecución, el adaptador recibe la cadena de conexión desde variables o desde la selección segura de sucursal.
+El repositorio ya contiene Prisma 7.8.0, schemas, clientes generados, migrations y seeds para tres bases globales. Esos artefactos provienen del trabajo anterior y contradicen la decisión actual. Parte 0 no instaló Prisma, no generó clientes y no ejecutó migraciones.
 
-`ControlPrismaService` y el `PrismaService` de Audit conectan y desconectan con el ciclo de vida Nest. La factory de sucursales crea clientes; la caché evita un pool por solicitud y los cierra al apagar.
-
-## Cuidados
-
-- Convertir `Decimal` explícitamente al responder por una API futura; no tratar dinero como `number` sin decisión de precisión.
-- No registrar URLs, claves ni contraseñas.
-- Regenerar clientes después de cambiar un schema.
-- Desplegar primero migraciones compatibles y después código consumidor.
-- No aceptar conexiones desde payloads HTTP.
+Fase 2 debe decidir rutas y comandos definitivos, reemplazar el legado de forma revisada y demostrar aislamiento con dos bases físicas de sucursal.

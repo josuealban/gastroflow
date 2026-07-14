@@ -1,66 +1,55 @@
-# Fases del proyecto — GastroFlow SaaS
+# Fases del proyecto
 
-La hoja de ruta conserva cuatro aplicaciones independientes. Una fase sólo debe marcarse como implementada después de superar sus verificaciones.
+## Parte 0 — congelación
 
-## Fase 1 — Estructura y comunicación
+Inspeccionar, resolver contradicciones en documentación, congelar decisiones y construir la hoja de ruta. No modifica lógica ni persistencia.
 
-Estado: implementada.
+## Fase 1 — estructura base
 
-- Estructura independiente de Gateway, Core, Audit y Frontend.
-- Configuración local mediante variables de entorno.
-- Comunicación HTTP entre React y el Gateway.
-- Comunicación TCP del Gateway con Core y Audit.
-- Health check con estados operativo, degradado y no disponible.
-- Pruebas unitarias, de integración y e2e del alcance actual.
+Estabilizar los cuatro proyectos, transportes HTTP/TCP, health checks, configuración y contratos mínimos. Retirar referencias operativas a la arquitectura descartada sin instalar Prisma ni migrar datos.
 
-## Fase 2 — Persistencia con Prisma
+## Fase 2 — Prisma
 
-Estado: implementada en código, pendiente de verificación PostgreSQL.
+Diseñar e implementar `gastroflow_control`, el schema operacional único, provisionamiento técnico, conexiones dinámicas y migraciones coordinadas. Probar dos bases de sucursales aisladas.
 
-- Prisma 7 con clientes separados para control, sucursal y auditoría.
-- Bases independientes de control, auditoría, Centro y Norte.
-- Migraciones, seeds, cifrado, selección dinámica y caché de conexiones.
-- Scripts de alta, migración, estado y aislamiento.
-- Pendiente ejecutar migraciones, seeds y aislamiento en PostgreSQL de desarrollo.
+## Fase 3 — autenticación
 
-## Fase 3 — Autenticación y autorización
+Implementar bcrypt, JWT, Passport, refresh tokens, Guards, `CurrentUser` y RBAC con pertenencia y roles por sucursal.
 
-Estado: pendiente.
+## Fase 4 — sucursales
 
-- Autenticación de usuarios.
-- Tokens JWT.
-- Roles y permisos mediante RBAC.
+Implementar alta, límites de plan, estados, creación de base, copia selectiva de plantilla, asignación de propietario y selección de sucursal activa.
 
-## Fase 4 — Abastecimiento
+## Fase 5 — personal
 
-Estado: pendiente.
+Implementar perfiles centrales, asignaciones `UserBranch`, roles por sucursal y experiencia de administración de personal.
 
-- Inventario.
-- Proveedores y compras.
-- Operaciones transaccionales con garantías ACID.
+## Fase 6 — platillos
 
-## Fase 5 — Operación del restaurante
+Implementar categorías, tarjetas de platillos, alta/edición, descripción libre e imágenes por URL externa.
 
-Estado: pendiente.
+## Fase 7 — inventario y compras
 
-- Productos y mesas.
-- Clientes.
-- Pedidos y pagos.
+Implementar artículos, proveedores, compras y movimientos transaccionales. La plantilla copia catálogo, pero inicia cantidades y costos en cero.
 
-## Fase 6 — Frontend completo
+## Fase 8 — clientes y mesas
 
-Estado: pendiente.
+Implementar clientes, reservaciones y mesas dentro de la base operacional seleccionada.
 
-- Navegación y experiencia administrativa.
-- Pantallas de los módulos habilitados.
-- Manejo de sesión, formularios y estados remotos.
+## Fase 9 — pedidos
 
-## Fase 7 — Entrega y documentación de API
+Implementar ciclo del pedido, múltiples platillos, estados, pagos y snapshots históricos.
 
-Estado: pendiente.
+## Fase 10 — facturación
 
-- Swagger y colección de Postman.
-- Ampliación de pruebas.
-- Preparación de la presentación y entrega.
+Implementar comprobante interno desde pedido, tasa configurable, secuencia transaccional, historia, filtros y archivo lógico. No incluye autorización SRI.
 
-Los modelos de Prisma para fases futuras ya existen. JWT, RBAC funcional, endpoints de inventario, pedidos, pagos y sus garantías transaccionales siguen pendientes.
+## Fase 11 — frontend
+
+Completar autenticación, selección por tarjetas, navegación y módulos funcionales consumiendo sólo el Gateway.
+
+## Fase 12 — reportes, calidad y despliegue
+
+Completar Postman, reportes, pruebas, seguridad, rendimiento, observabilidad, backups, HTTPS, CI/CD, despliegue y evidencia académica.
+
+Cada fase exige criterios de aceptación y evidencia antes de marcar tareas como completadas.

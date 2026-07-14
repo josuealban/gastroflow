@@ -28,16 +28,17 @@ import { parsePort } from './parse-port';
         },
       },
       {
-        name: 'AUDIT_SERVICE',
+        name: 'OPERATIONS_SERVICE',
         inject: [ConfigService],
         useFactory: (configService: ConfigService) => {
           return {
             transport: Transport.TCP,
             options: {
               host:
-                configService.get<string>('AUDIT_SERVICE_HOST') || '127.0.0.1',
+                configService.get<string>('OPERATIONS_SERVICE_HOST') ||
+                '127.0.0.1',
               port: parsePort(
-                configService.get<string>('AUDIT_SERVICE_PORT'),
+                configService.get<string>('OPERATIONS_SERVICE_PORT'),
                 3002,
               ),
             },

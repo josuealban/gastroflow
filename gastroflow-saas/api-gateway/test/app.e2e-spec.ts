@@ -19,7 +19,7 @@ describe('AppController (e2e)', () => {
     send: jest.fn().mockReturnValue(of({ status: 'ok' })),
   };
 
-  const mockAuditClient = {
+  const mockOperationsClient = {
     send: jest.fn().mockReturnValue(of({ status: 'ok' })),
   };
 
@@ -29,8 +29,8 @@ describe('AppController (e2e)', () => {
     })
       .overrideProvider('CORE_SERVICE')
       .useValue(mockCoreClient)
-      .overrideProvider('AUDIT_SERVICE')
-      .useValue(mockAuditClient)
+      .overrideProvider('OPERATIONS_SERVICE')
+      .useValue(mockOperationsClient)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -44,7 +44,7 @@ describe('AppController (e2e)', () => {
 
   beforeEach(() => {
     mockCoreClient.send.mockReturnValue(of({ status: 'ok' }));
-    mockAuditClient.send.mockReturnValue(of({ status: 'ok' }));
+    mockOperationsClient.send.mockReturnValue(of({ status: 'ok' }));
   });
 
   afterEach(() => {
@@ -60,14 +60,14 @@ describe('AppController (e2e)', () => {
         service: 'api-gateway',
         dependencies: {
           core: 'up',
-          audit: 'up',
+          operations: 'up',
         },
       });
   });
 
-  it('GET /api/v1/health returns degraded when audit is down', async () => {
-    mockAuditClient.send.mockReturnValue(
-      throwError(() => new Error('audit unavailable')),
+  it('GET /api/v1/health returns degraded when operations is down', async () => {
+    mockOperationsClient.send.mockReturnValue(
+      throwError(() => new Error('operations unavailable')),
     );
 
     await request(app.getHttpServer())
@@ -76,7 +76,7 @@ describe('AppController (e2e)', () => {
       .expect({
         status: 'degraded',
         service: 'api-gateway',
-        dependencies: { core: 'up', audit: 'down' },
+        dependencies: { core: 'up', operations: 'down' },
       });
   });
 
@@ -91,7 +91,7 @@ describe('AppController (e2e)', () => {
       .expect({
         status: 'unavailable',
         service: 'api-gateway',
-        dependencies: { core: 'down', audit: 'up' },
+        dependencies: { core: 'down', operations: 'up' },
       });
   });
 });

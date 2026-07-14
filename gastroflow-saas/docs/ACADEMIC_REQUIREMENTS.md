@@ -1,0 +1,84 @@
+# Matriz de requisitos académicos
+
+## Convención de estados
+
+- `PENDING`: aún no diseñado o construido con evidencia suficiente.
+- `DOCUMENTED`: explicado, pero no implementado.
+- `IMPLEMENTED`: existe código alineado con la arquitectura vigente, todavía sin prueba suficiente.
+- `TESTED`: implementación cubierta por una prueba ejecutable.
+- `EVIDENCED`: probado y acompañado por evidencia académica preparada para entrega.
+
+La inspección de Parte 0 no ejecutó pruebas funcionales. Los health checks observados tienen pruebas en el repositorio, por lo que se registran como `TESTED`; Prisma y el código de tres bases globales no se acreditan porque contradicen la arquitectura congelada.
+
+| ID | Tema | Concepto | Aplicación en GastroFlow | Fase | Proyecto responsable | Endpoint o archivo esperado | Prueba esperada | Evidencia esperada | Estado |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| AC-001 | HTTP | Protocolo de aplicación | Frontend consume sólo el Gateway | 1 | API Gateway | `src/main.ts` | E2E de health | Request/response capturado | TESTED |
+| AC-002 | HTTP/1.1 | Conexión y mensajes | Base compatible del servidor HTTP | 12 | API Gateway | Configuración de despliegue | Negociación HTTP/1.1 | Captura de protocolo | DOCUMENTED |
+| AC-003 | HTTP/2 | Multiplexación | Evaluación tras HTTPS | 12 | API Gateway | Proxy o servidor | Negociación h2 | Captura ALPN | DOCUMENTED |
+| AC-004 | HTTP/3 | QUIC | Investigación fuera del MVP | 12 | Infraestructura | Documento de despliegue | Prueba exploratoria | Informe comparativo | DOCUMENTED |
+| AC-005 | HTTP frente a HTTPS | Transporte cifrado | HTTP local; HTTPS obligatorio al desplegar | 12 | Infraestructura | Proxy/TLS | Redirección y certificado | Captura TLS | DOCUMENTED |
+| AC-006 | Cliente-servidor | Separación de responsabilidades | React solicita; Gateway responde | 1 | Frontend / Gateway | `docs/CLIENT_SERVER.md` | E2E de health | Diagrama y respuesta | TESTED |
+| AC-007 | Request | Solicitud HTTP | Método, ruta, headers y body | 1 | API Gateway | `/api/v1/health` | Supertest | Registro de prueba | TESTED |
+| AC-008 | Response | Respuesta HTTP | Estado y JSON estable | 1 | API Gateway | `/api/v1/health` | Supertest | JSON de respuesta | TESTED |
+| AC-009 | Headers | Metadatos HTTP | Content-Type y futura autorización | 3 | API Gateway | Middleware/Guard | Integración de headers | Captura de Postman | DOCUMENTED |
+| AC-010 | Body | Carga de solicitud | DTO JSON para comandos | 4 | API Gateway | `POST /api/v1/branches` | Validación de body | Casos válido/inválido | DOCUMENTED |
+| AC-011 | JSON | Representación | Contrato externo del Gateway | 1 | API Gateway | Controllers | E2E Content-Type | Respuesta guardada | TESTED |
+| AC-012 | GET | Lectura | Health y futuros listados | 1 | API Gateway | `GET /api/v1/health` | E2E 200/503 | Reporte Jest | TESTED |
+| AC-013 | POST | Creación/acción | Sucursales y selección futura | 4 | Gateway / Core | `/api/v1/branches`, `/session/branch` | E2E 201/errores | Colección Postman | DOCUMENTED |
+| AC-014 | PUT | Reemplazo | Sólo donde el recurso lo requiera | 6 | Gateway / Operations | Endpoint por definir | E2E idempotencia | Contrato OpenAPI | DOCUMENTED |
+| AC-015 | PATCH | Actualización parcial | Estado, catálogo y archivo lógico | 6 | Gateway / Operations | Endpoint por definir | E2E de cambios parciales | Colección Postman | DOCUMENTED |
+| AC-016 | DELETE | Eliminación | Sólo recursos permitidos; no facturas | 6 | Gateway / Services | Endpoint por definir | E2E y reglas de integridad | Casos de prueba | DOCUMENTED |
+| AC-017 | Códigos HTTP | Semántica | 2xx, 4xx y 5xx coherentes | 1 | API Gateway | Health controller | E2E 200/503 | Reporte Jest | TESTED |
+| AC-018 | NestJS | Framework backend | Tres proyectos NestJS separados | 1 | Backend | `*/src/main.ts` | Build y smoke test | Árbol del repositorio | IMPLEMENTED |
+| AC-019 | Controllers | Adaptador de entrada | HTTP en Gateway, mensajes TCP en servicios | 1 | Backend | `app.controller.ts` | Unitarias | Reporte Jest | TESTED |
+| AC-020 | Services | Casos de uso | Lógica fuera de controllers | 4 | Core / Operations | `src/**/**.service.ts` | Unitarias aisladas | Cobertura | DOCUMENTED |
+| AC-021 | DTO | Contratos tipados | Validación de entradas públicas | 4 | Gateway / Services | `src/**/dto` | Unitarias de DTO | Matriz válido/inválido | DOCUMENTED |
+| AC-022 | Entidades | Modelo de dominio | Restaurant, Branch y agregados operativos | 2 | Core / Operations | Schemas y dominio | Pruebas de invariantes | Diagrama ER | DOCUMENTED |
+| AC-023 | class-validator | Reglas declarativas | Validar DTO | 4 | Backend | DTO futuros | Casos de error | Captura 400 | DOCUMENTED |
+| AC-024 | class-transformer | Transformación | Conversión segura de query/body | 4 | Backend | DTO futuros | Pruebas de transformación | Reporte Jest | DOCUMENTED |
+| AC-025 | ValidationPipe | Frontera de entrada | Pipe global del Gateway | 4 | API Gateway | `src/main.ts` | E2E de payload inválido | Respuesta 400 | DOCUMENTED |
+| AC-026 | Prisma | Acceso tipado | Central y schema operacional por sucursal | 2 | Core / Operations | schemas definitivos | Validate/generate | Salida CLI | DOCUMENTED |
+| AC-027 | ORM | Mapeo objeto-relacional | Prisma encapsula PostgreSQL | 2 | Core / Operations | Capa de persistencia | Integración real | Reporte de prueba | DOCUMENTED |
+| AC-028 | schema.prisma | Modelo declarativo | Un schema central y uno operacional | 2 | Core / Operations | rutas por definir | `prisma validate` | Diff revisado | DOCUMENTED |
+| AC-029 | PrismaService | Ciclo de conexión | Central fijo y operaciones dinámicas | 2 | Core / Operations | `src/database` | Init/destroy y errores | Reporte Jest | DOCUMENTED |
+| AC-030 | findMany | Consulta ORM | Listados filtrados/paginados | 6 | Services | repositorios futuros | Integración de filtros | SQL/log seguro | DOCUMENTED |
+| AC-031 | create | Escritura ORM | Altas mediante casos de uso | 4 | Services | repositorios futuros | Integridad/transacción | Datos verificados | DOCUMENTED |
+| AC-032 | Arquitectura monolítica | Comparación | Contrastar con servicios separados | 1 | Documentación | `docs/ARCHITECTURE.md` | Revisión académica | Cuadro comparativo | DOCUMENTED |
+| AC-033 | Arquitectura en capas | Organización | Controllers, aplicación, dominio y persistencia | 4 | Backend | estructura futura | Pruebas por capa | Diagrama | DOCUMENTED |
+| AC-034 | Microservicios | Servicios autónomos | Gateway, Core y Operations | 1 | Backend | `docs/MICROSERVICES.md` | Health TCP | Diagrama y pruebas | TESTED |
+| AC-035 | Hexagonal | Puertos y adaptadores | Aislar HTTP/TCP/Prisma del dominio | 4 | Backend | interfaces futuras | Unitarias sin infraestructura | Diagrama de puertos | DOCUMENTED |
+| AC-036 | REST | Estilo de API | Recursos HTTP sólo en Gateway | 4 | API Gateway | `/api/v1` | E2E de contratos | Colección Postman | DOCUMENTED |
+| AC-037 | Recursos | Sustantivos de dominio | branches, products, orders, invoices | 4 | API Gateway | rutas futuras | Revisión de naming | Catálogo de API | DOCUMENTED |
+| AC-038 | Endpoints | Operaciones públicas | Gateway traduce a TCP | 4 | API Gateway | controllers futuros | E2E | Postman/OpenAPI | DOCUMENTED |
+| AC-039 | Versionamiento `/api/v1` | Compatibilidad | Prefijo global HTTP | 1 | API Gateway | `src/main.ts` | E2E de ruta | Captura 200 | TESTED |
+| AC-040 | Query params | Opciones de lectura | Filtros y paginación | 6 | API Gateway | listados futuros | Validación de query | Casos Postman | DOCUMENTED |
+| AC-041 | Búsqueda | Coincidencias controladas | Catálogo, clientes y facturas | 6 | Operations | endpoints futuros | Relevancia y aislamiento | Dataset de prueba | DOCUMENTED |
+| AC-042 | Filtros | Restricción de resultados | Estado, fecha y sucursal activa | 6 | Operations | repositorios futuros | Integración | Resultados esperados | DOCUMENTED |
+| AC-043 | Paginación | Listados acotados | Especialmente facturas/historial | 6 | Operations | DTO de paginación | Bordes y orden estable | Evidencia Postman | DOCUMENTED |
+| AC-044 | Migraciones | Evolución del schema | Central y todas las bases de sucursal | 2 | Core / Operations | `prisma/migrations` definitivo | Deploy en bases de prueba | Salida CLI | DOCUMENTED |
+| AC-045 | Vistas SQL | Lecturas derivadas | Reportes seleccionados | 12 | Operations | migración SQL futura | Comparación con consulta base | Plan de ejecución | DOCUMENTED |
+| AC-046 | JWT | Token firmado | Identidad y contexto autorizado | 3 | Core / Gateway | auth module | E2E válido/expirado | Claims sanitizados | DOCUMENTED |
+| AC-047 | Passport | Estrategia auth | Validación JWT | 3 | Core / Gateway | strategy futura | Unitarias/E2E | Reporte Jest | DOCUMENTED |
+| AC-048 | bcrypt | Hash de contraseña | Registro/login, nunca texto plano | 3 | Core | auth service | Hash y verificación | Test sin secretos | DOCUMENTED |
+| AC-049 | Guards | Autorización | Proteger rutas y permisos | 3 | Gateway / Core | guards futuros | 401/403/200 | Matriz de acceso | DOCUMENTED |
+| AC-050 | CurrentUser | Contexto | Usuario autenticado tipado | 3 | Backend | decorator futuro | Unitarias | Claims esperados | DOCUMENTED |
+| AC-051 | Refresh Token | Renovación segura | Rotación/revocación central | 3 | Core | modelo y endpoint futuro | Reuso/revocación | Evidencia E2E | DOCUMENTED |
+| AC-052 | RBAC | Acceso por sucursal | Roles distintos por UserBranch | 3 | Core | guards y relaciones | Matriz de permisos | Reporte de autorización | DOCUMENTED |
+| AC-053 | users | Identidades | Usuarios centrales | 2 | Core | schema central | Integración CRUD | Registros de prueba | DOCUMENTED |
+| AC-054 | roles | Agrupación de permisos | Roles globales o del restaurante, asignados por sucursal | 2 | Core | schema central | Integridad | Diagrama ER | DOCUMENTED |
+| AC-055 | permissions | Capacidades | Catálogo de acciones | 2 | Core | schema central | Unicidad | Seed revisado | DOCUMENTED |
+| AC-056 | user_roles | Rol base | Relación si el diseño final la conserva | 2 | Core | schema central | Integridad relacional | Diagrama ER | DOCUMENTED |
+| AC-057 | role_permissions | Composición RBAC | Permisos por rol | 2 | Core | schema central | Integridad relacional | Matriz RBAC | DOCUMENTED |
+| AC-058 | Transacciones | Unidad atómica | Stock, compras, secuencia y factura | 7-10 | Operations | casos de uso futuros | Fallo/rollback | Evidencia de invariantes | DOCUMENTED |
+| AC-059 | ACID | Propiedades transaccionales | Consistencia en PostgreSQL | 7-10 | Operations | capa de persistencia | Concurrencia/rollback | Informe técnico | DOCUMENTED |
+| AC-060 | Desestructuración | Sintaxis JS/TS | DTO y mapeos legibles | 4 | Backend / Frontend | código futuro | Lint/unitarias | Fragmento explicado | DOCUMENTED |
+| AC-061 | Consultas derivadas | Datos calculados | Totales, dashboard y stock | 9-12 | Operations | query/service futuro | Comparación esperada | Dataset y resultado | DOCUMENTED |
+| AC-062 | Consultas nativas | SQL específico | Vistas/reportes justificados | 12 | Operations | repositorio futuro | Integración PostgreSQL | SQL y plan | DOCUMENTED |
+| AC-063 | Postman | Cliente de prueba | Colección sobre Gateway | 4-12 | API Gateway | `postman/` futuro | Ejecución de colección | Export y capturas | DOCUMENTED |
+| AC-064 | Pruebas | Calidad | Unitarias, E2E e integración | Todas | Todos | `*.spec.ts` | Suites por fase | Reportes | IMPLEMENTED |
+| AC-065 | HTTPS | Seguridad de transporte | TLS en despliegue | 12 | Infraestructura | proxy/certificados | SSL Labs o equivalente | Captura de certificado | DOCUMENTED |
+| AC-066 | Despliegue | Entrega estable | Servicios, DB, secretos y backups | 12 | Infraestructura | pipeline/guía futura | Smoke/rollback | URL y pipeline | DOCUMENTED |
+
+## Criterio de avance
+
+Un requisito sólo avanzará de `DOCUMENTED` cuando el código pertenezca a la arquitectura vigente. `TESTED` exige una prueba ejecutable y `EVIDENCED` exige además un artefacto académico reproducible.

@@ -1,70 +1,54 @@
 # GastroFlow SaaS
 
-Base de una plataforma multi-sucursal con cuatro proyectos independientes:
+GastroFlow es una plataforma SaaS para la gestión de restaurantes con múltiples sucursales. Este repositorio contiene cuatro proyectos independientes; no es un monorepo NestJS ni usa Nx.
 
-- `api-gateway`: NestJS HTTP en 3000.
-- `core-service`: NestJS TCP en 3001 y persistencia de control/sucursales.
-- `audit-service`: NestJS TCP en 3002 y persistencia exclusiva de auditoría.
-- `frontend`: React/Vite en 5173, pantalla temporal de salud.
+## Arquitectura congelada
 
-## Requisitos
-
-- Node.js 24 (Prisma 7 requiere Node 20.19+, 22.12+ o 24+).
-- npm 11.
-- Docker y Docker Compose para PostgreSQL de desarrollo.
-
-## Instalación
-
-Ejecutar `npm install` en la raíz y en cada uno de los cuatro proyectos. Copiar cada `.env.example` a `.env`; la clave `BRANCH_DB_ENCRYPTION_KEY` debe reemplazarse por 64 caracteres hexadecimales reales de desarrollo.
-
-## PostgreSQL local
-
-```bash
-npm run db:up
-npm run db:logs
-npm run db:down
+```text
+frontend :5173
+    |
+    | HTTP/JSON
+    v
+api-gateway :3000
+    | TCP                 | TCP
+    v                     v
+core-service :3001    operations-service :3002
+    |                     |
+    v                     v
+gastroflow_control    una base PostgreSQL por sucursal
+                      (un mismo schema operacional)
 ```
 
-El contenedor crea `gastroflow_control`, `gastroflow_audit`, `gastroflow_demo_centro` y `gastroflow_demo_norte` en un servidor PostgreSQL, manteniéndolas como bases separadas.
+- `api-gateway`: única entrada HTTP futura bajo `/api/v1`; no usa Prisma ni PostgreSQL.
+- `core-service`: datos centrales de restaurantes, sucursales, planes, suscripciones, usuarios, personal y acceso.
+- `operations-service`: seleccionará dinámicamente la base de la sucursal activa y gestionará sus operaciones.
+- `frontend`: React con Vite; se comunica únicamente con el Gateway.
 
-`npm run db:reset` elimina el volumen y todos los datos locales. Es destructivo.
+Una sucursal es un registro administrado por la plataforma. No es un microservicio, frontend, Gateway ni despliegue independiente.
 
-## Preparación de Prisma
+## Estado real al cerrar la Parte 0
 
-```bash
-cd core-service
-npm run prisma:control:generate
-npm run prisma:control:deploy
-npm run prisma:control:seed
-npm run prisma:branch:generate
-npm run prisma:branch:deploy:centro
-npm run prisma:branch:deploy:norte
-npm run prisma:branch:seed:centro
-npm run prisma:branch:seed:norte
-npm run verify:branch-isolation
-npm run branches:status
+La estructura HTTP/TCP, los puertos y los health checks ya existen. El árbol de trabajo también contiene una implementación Prisma no confirmada basada en tres bases globales por dominio y `restaurantId`. Esa persistencia contradice la arquitectura congelada y queda inventariada para rediseño, no como funcionalidad válida.
 
-cd ../audit-service
-npm run prisma:generate
-npm run prisma:deploy
-npm run prisma:seed
-```
+En la Parte 0 no se instalaron dependencias, no se ejecutaron migraciones y no se implementaron endpoints ni lógica funcional.
 
-Los comandos completos y el proceso de nuevas sucursales están en `docs/MIGRATIONS.md` y `docs/DATABASE_PER_BRANCH.md`.
+## Documentación principal
 
-## Desarrollo y verificación
+- [Especificación](PROJECT_SPEC.md)
+- [Arquitectura](docs/ARCHITECTURE.md)
+- [Modelo SaaS](docs/SAAS_MODEL.md)
+- [Modelo de sucursales](docs/BRANCH_MODEL.md)
+- [Estrategia de bases](docs/DATABASE_STRATEGY.md)
+- [Modelo de personal](docs/STAFF_MODEL.md)
+- [Requisitos académicos](docs/ACADEMIC_REQUIREMENTS.md)
+- [Visión de titulación](docs/THESIS_VISION.md)
+- [Lista de tareas](docs/TASK_LIST.md)
+- [Informe de Parte 0](docs/PHASE_0_REPORT.md)
 
-```bash
-npm run start:all
-npm run build:all
-```
+## Herramientas observadas
 
-Cada proyecto ofrece sus propios `lint`, `test`, `test:e2e` y `build`. Core y Audit añaden `test:integration`, que requiere `RUN_DATABASE_TESTS=true` y PostgreSQL preparado.
+- Node.js `v24.14.1`.
+- npm `11.11.0`.
+- Docker y Docker Compose no están disponibles en el equipo inspeccionado.
 
-## Estado
-
-- Fase 1: completada.
-- Fase 2: implementación en repositorio terminada; verificación real de migraciones, seeds y aislamiento pendiente cuando PostgreSQL de desarrollo esté disponible.
-- Fase 3: autenticación JWT y RBAC pendiente.
-
-No existen todavía endpoints completos de autenticación, productos, inventario, pedidos o pagos.
+Los comandos de instalación, generación y migración pertenecen a fases posteriores y deben ejecutarse sólo después de retirar o rediseñar el legado contradictorio.

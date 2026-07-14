@@ -10,7 +10,7 @@ describe('AppController', () => {
     send: jest.fn(),
   };
 
-  const mockAuditClient = {
+  const mockOperationsClient = {
     send: jest.fn(),
   };
 
@@ -23,8 +23,8 @@ describe('AppController', () => {
           useValue: mockCoreClient,
         },
         {
-          provide: 'AUDIT_SERVICE',
-          useValue: mockAuditClient,
+          provide: 'OPERATIONS_SERVICE',
+          useValue: mockOperationsClient,
         },
       ],
     }).compile();
@@ -39,7 +39,7 @@ describe('AppController', () => {
 
   it('should return ok when both services are up', async () => {
     mockCoreClient.send.mockReturnValue(of({ status: 'ok' }));
-    mockAuditClient.send.mockReturnValue(of({ status: 'ok' }));
+    mockOperationsClient.send.mockReturnValue(of({ status: 'ok' }));
 
     const response = await appController.getHealth();
     expect(response).toEqual({
@@ -47,14 +47,14 @@ describe('AppController', () => {
       service: 'api-gateway',
       dependencies: {
         core: 'up',
-        audit: 'up',
+        operations: 'up',
       },
     });
   });
 
-  it('should return degraded when audit-service fails', async () => {
+  it('should return degraded when operations-service fails', async () => {
     mockCoreClient.send.mockReturnValue(of({ status: 'ok' }));
-    mockAuditClient.send.mockReturnValue(
+    mockOperationsClient.send.mockReturnValue(
       throwError(() => new Error('timeout')),
     );
 
@@ -64,14 +64,14 @@ describe('AppController', () => {
       service: 'api-gateway',
       dependencies: {
         core: 'up',
-        audit: 'down',
+        operations: 'down',
       },
     });
   });
 
   it('should throw Service Unavailable when core-service fails', async () => {
     mockCoreClient.send.mockReturnValue(throwError(() => new Error('timeout')));
-    mockAuditClient.send.mockReturnValue(of({ status: 'ok' }));
+    mockOperationsClient.send.mockReturnValue(of({ status: 'ok' }));
 
     await expect(appController.getHealth()).rejects.toThrow(HttpException);
     await expect(appController.getHealth()).rejects.toMatchObject({
@@ -81,7 +81,7 @@ describe('AppController', () => {
         service: 'api-gateway',
         dependencies: {
           core: 'down',
-          audit: 'up',
+          operations: 'up',
         },
       },
     });
@@ -89,7 +89,9 @@ describe('AppController', () => {
 
   it('should return unavailable when both services fail', async () => {
     mockCoreClient.send.mockReturnValue(throwError(() => new Error('down')));
-    mockAuditClient.send.mockReturnValue(throwError(() => new Error('down')));
+    mockOperationsClient.send.mockReturnValue(
+      throwError(() => new Error('down')),
+    );
 
     await expect(appController.getHealth()).rejects.toMatchObject({
       status: HttpStatus.SERVICE_UNAVAILABLE,
@@ -98,7 +100,7 @@ describe('AppController', () => {
         service: 'api-gateway',
         dependencies: {
           core: 'down',
-          audit: 'down',
+          operations: 'down',
         },
       },
     });
@@ -107,14 +109,14 @@ describe('AppController', () => {
   it('should return unavailable after the core-service timeout', async () => {
     jest.useFakeTimers();
     mockCoreClient.send.mockReturnValue(NEVER);
-    mockAuditClient.send.mockReturnValue(of({ status: 'ok' }));
+    mockOperationsClient.send.mockReturnValue(of({ status: 'ok' }));
 
     const expectation = expect(appController.getHealth()).rejects.toMatchObject(
       {
         status: HttpStatus.SERVICE_UNAVAILABLE,
         response: {
           status: 'unavailable',
-          dependencies: { core: 'down', audit: 'up' },
+          dependencies: { core: 'down', operations: 'up' },
         },
       },
     );
@@ -122,15 +124,15 @@ describe('AppController', () => {
     await expectation;
   });
 
-  it('should return degraded after the audit-service timeout', async () => {
+  it('should return degraded after the operations-service timeout', async () => {
     jest.useFakeTimers();
     mockCoreClient.send.mockReturnValue(of({ status: 'ok' }));
-    mockAuditClient.send.mockReturnValue(NEVER);
+    mockOperationsClient.send.mockReturnValue(NEVER);
 
     const expectation = expect(appController.getHealth()).resolves.toEqual({
       status: 'degraded',
       service: 'api-gateway',
-      dependencies: { core: 'up', audit: 'down' },
+      dependencies: { core: 'up', operations: 'down' },
     });
     await jest.advanceTimersByTimeAsync(2000);
     await expectation;
@@ -140,7 +142,7 @@ describe('AppController', () => {
     mockCoreClient.send.mockReturnValue(
       throwError(() => new Error('sensitive internal detail')),
     );
-    mockAuditClient.send.mockReturnValue(of({ status: 'ok' }));
+    mockOperationsClient.send.mockReturnValue(of({ status: 'ok' }));
 
     try {
       await appController.getHealth();
@@ -155,7 +157,7 @@ describe('AppController', () => {
 
   it('should query the expected TCP message patterns', async () => {
     mockCoreClient.send.mockReturnValue(of({ status: 'ok' }));
-    mockAuditClient.send.mockReturnValue(of({ status: 'ok' }));
+    mockOperationsClient.send.mockReturnValue(of({ status: 'ok' }));
 
     await appController.getHealth();
 
@@ -163,8 +165,8 @@ describe('AppController', () => {
       { cmd: 'health.core' },
       {},
     );
-    expect(mockAuditClient.send).toHaveBeenCalledWith(
-      { cmd: 'health.audit' },
+    expect(mockOperationsClient.send).toHaveBeenCalledWith(
+      { cmd: 'health.operations' },
       {},
     );
   });

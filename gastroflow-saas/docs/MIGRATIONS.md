@@ -1,43 +1,22 @@
-# Migraciones
+# Estrategia de migraciones
 
-Hay tres historiales independientes:
+## Objetivo
 
-- Control: `core-service/prisma/control/migrations`.
-- Plantilla operacional: `core-service/prisma/branch/migrations`.
-- Auditoría: `audit-service/prisma/migrations`.
+Mantener dos historiales conceptuales:
 
-## Comandos
+- schema central para `gastroflow_control`;
+- schema operacional canónico, desplegado en cada base de sucursal.
 
-```bash
-# Control
-cd core-service
-npm run prisma:control:validate
-npm run prisma:control:generate
-npm run prisma:control:deploy
-npm run prisma:control:seed
+La creación de una sucursal debe aplicar todas las migraciones operacionales antes de copiar catálogos. Las actualizaciones deberán descubrir sucursales activas, verificar versión, aplicar cambios con reintentos controlados y registrar resultados sin secretos.
 
-# Centro y Norte usan el mismo historial
-npm run prisma:branch:validate
-npm run prisma:branch:generate
-npm run prisma:branch:deploy:centro
-npm run prisma:branch:deploy:norte
-npm run prisma:branch:seed:centro
-npm run prisma:branch:seed:norte
+## Seguridad operacional
 
-# Todas las sucursales registradas
-npm run branches:migrate-all
-npm run branches:status
+- Respaldar y probar restauración antes de cambios incompatibles.
+- Preferir migraciones compatibles hacia adelante.
+- Evitar una activación de sucursal con schema incompleto.
+- Definir qué ocurre si algunas bases migran y otras fallan.
+- No usar `migrate dev` en ambientes compartidos.
 
-# Auditoría
-cd ../audit-service
-npm run prisma:validate
-npm run prisma:generate
-npm run prisma:deploy
-npm run prisma:seed
-```
+## Estado de Parte 0
 
-`migrate dev` se reserva para crear una nueva migración en desarrollo. Centro y Norte reciben `migrate deploy`; nunca se crea un historial distinto por sucursal.
-
-## Rollback
-
-Prisma Migrate no genera rollback automático seguro. En producción se prefieren migraciones compatibles hacia adelante y una migración correctiva. Un rollback manual requiere respaldo probado y SQL revisado. `npm run db:reset` elimina el volumen local completo: es destructivo y nunca debe usarse con datos reales.
+No se creó ni ejecutó ninguna migración. Las tres migraciones visibles para bases globales son artefactos previos y no deben aplicarse como arquitectura definitiva. Los comandos exactos se definirán en Fase 2, después de aprobar los schemas.
