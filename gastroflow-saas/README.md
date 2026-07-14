@@ -15,7 +15,7 @@ Base de una plataforma multi-sucursal con cuatro proyectos independientes:
 
 ## Instalación
 
-Ejecutar `npm install` en la raíz y en cada uno de los cuatro proyectos. Copiar cada `.env.example` a `.env`; la clave `BRANCH_DB_ENCRYPTION_KEY` debe reemplazarse por 32 bytes reales de desarrollo.
+Ejecutar `npm install` en la raíz y en cada uno de los cuatro proyectos. Copiar cada `.env.example` a `.env`; la clave `BRANCH_DB_ENCRYPTION_KEY` debe reemplazarse por 64 caracteres hexadecimales reales de desarrollo.
 
 ## PostgreSQL local
 

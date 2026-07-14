@@ -19,6 +19,7 @@ El modelo cliente-servidor consiste en dos partes que se comunican mediante una 
 ## Implementación en GastroFlow
 
 ### El Cliente (React)
+
 - Corre en el navegador del usuario en el puerto `5173`.
 - Inicia el flujo enviando peticiones usando el cliente Axios (`apiClient`).
 - Ejemplos de peticiones:
@@ -26,6 +27,7 @@ El modelo cliente-servidor consiste en dos partes que se comunican mediante una 
 - Es responsable de mostrar una interfaz amigable (UI) y manejar los mensajes de error sin exponer detalles internos al usuario.
 
 ### El Servidor HTTP (api-gateway)
+
 - Corre en NestJS en el puerto `3000`.
 - Es la única puerta de entrada HTTP expuesta para el cliente.
 - Recibe peticiones HTTP y traduce las consultas actuales a mensajes TCP para los microservicios correspondientes.

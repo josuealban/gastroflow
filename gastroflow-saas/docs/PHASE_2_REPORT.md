@@ -20,6 +20,12 @@ Preparar persistencia separada para control, auditoría y cada sucursal sin impl
 
 Schemas, generación de clientes, lint, pruebas unitarias y builds se verifican sin PostgreSQL. En el equipo de implementación Docker no está instalado y el PostgreSQL local no acepta las credenciales de desarrollo, por lo que migraciones, seeds y aislamiento real siguen pendientes de ejecución. La Fase 2 no se marca como completada hasta superar esos pasos.
 
+## Datos exclusivamente de desarrollo
+
+El seed de Centro prepara `owner@demo.com`, `manager@demo.com`, `waiter@demo.com`, `cashier@demo.com` e `inventory@demo.com`. Norte sólo prepara `owner@demo.com`. Las contraseñas de desarrollo son, respectivamente, `Owner123*`, `Manager123*`, `Waiter123*`, `Cashier123*` e `Inventory123*`; se almacenan únicamente como hashes bcrypt y deben cambiarse fuera del entorno local.
+
+Centro contiene Encebollado, cinco mesas, cliente, arroz y proveedor propios. Norte contiene Bolón, tres mesas, otro cliente, plátano y otro proveedor. Estos datos diferentes sirven para comprobar el aislamiento.
+
 ## Siguiente fase
 
 Después de validar PostgreSQL: autenticación por sucursal con bcrypt, JWT y RBAC utilizando los modelos ya creados, sin enviar credenciales de base al cliente.

@@ -86,5 +86,8 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
+  },
+  "overrides": {
+    "@hono/node-server": "1.19.13"
   }
 }

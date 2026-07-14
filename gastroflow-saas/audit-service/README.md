@@ -12,6 +12,7 @@ Microservicio TCP reservado para la auditoría de GastroFlow. En la fase inicial
 ```env
 AUDIT_SERVICE_HOST=127.0.0.1
 AUDIT_SERVICE_PORT=3002
+AUDIT_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/gastroflow_audit?schema=public
 ```
 
 Copiar `.env.example` a `.env` para desarrollo local. Los ejemplos no deben contener secretos.
@@ -29,6 +30,12 @@ npm run build
 
 Las pruebas actuales validan la respuesta del patrón de salud sin requerir otros servicios.
 
+## Persistencia de Fase 2
+
+El schema `prisma/schema.prisma` genera un cliente exclusivo para `gastroflow_audit`. `PrismaModule` conecta y desconecta con el ciclo de vida Nest. Los modelos son `AuditLog`, `SecurityEvent` e `IntegrationError`.
+
+Comandos disponibles: `prisma:format`, `prisma:validate`, `prisma:generate`, `prisma:deploy` y `prisma:seed`.
+
 ## Estado actual
 
-El servicio carga variables con `@nestjs/config`, valida su puerto y escucha mediante TCP. Todavía no persiste registros, no usa Prisma y no implementa eventos de seguridad.
+Prisma está configurado y el servicio mantiene su contrato de salud TCP. Los handlers completos para registrar eventos todavía no están implementados.

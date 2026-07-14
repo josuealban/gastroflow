@@ -4,13 +4,13 @@ GastroFlow implementa RBAC (Role-Based Access Control) a nivel de sucursal. Cada
 
 ## Roles
 
-| Rol | Descripción |
-|-----|-------------|
-| `OWNER` | Dueño con acceso total a la sucursal |
-| `MANAGER` | Gerente, puede gestionar todo excepto eliminar la empresa |
-| `WAITER` | Mesero, puede crear y gestionar pedidos |
-| `CASHIER` | Cajero, puede procesar pagos |
-| `INVENTORY_MANAGER` | Gestiona inventario, proveedores y compras |
+| Rol                 | Descripción                                               |
+| ------------------- | --------------------------------------------------------- |
+| `OWNER`             | Dueño con acceso total a la sucursal                      |
+| `MANAGER`           | Gerente, puede gestionar todo excepto eliminar la empresa |
+| `WAITER`            | Mesero, puede crear y gestionar pedidos                   |
+| `CASHIER`           | Cajero, puede procesar pagos                              |
+| `INVENTORY_MANAGER` | Gestiona inventario, proveedores y compras                |
 
 ## Modelo de Datos
 
@@ -24,20 +24,20 @@ User ─────── UserRole ─────── Role ─────�
 
 ## Permisos (Ejemplos)
 
-| Permiso | Descripción |
-|---------|-------------|
-| `users:read` | Ver lista de usuarios |
-| `users:create` | Crear usuarios |
-| `users:update` | Actualizar usuarios |
-| `users:delete` | Eliminar usuarios |
-| `products:read` | Ver productos |
-| `products:create` | Crear productos |
-| `orders:read` | Ver pedidos |
-| `orders:create` | Crear pedidos |
-| `orders:update` | Actualizar pedidos |
-| `payments:process` | Procesar pagos |
-| `inventory:read` | Ver inventario |
-| `inventory:manage` | Gestionar inventario |
+| Permiso            | Descripción           |
+| ------------------ | --------------------- |
+| `users:read`       | Ver lista de usuarios |
+| `users:create`     | Crear usuarios        |
+| `users:update`     | Actualizar usuarios   |
+| `users:delete`     | Eliminar usuarios     |
+| `products:read`    | Ver productos         |
+| `products:create`  | Crear productos       |
+| `orders:read`      | Ver pedidos           |
+| `orders:create`    | Crear pedidos         |
+| `orders:update`    | Actualizar pedidos    |
+| `payments:process` | Procesar pagos        |
+| `inventory:read`   | Ver inventario        |
+| `inventory:manage` | Gestionar inventario  |
 
 ## Implementación con Guards
 
