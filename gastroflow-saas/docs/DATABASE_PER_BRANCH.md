@@ -1,29 +1,22 @@
-# Database Per Branch Architecture
+# Base de datos por sucursal
 
-## Diferencia entre base compartida y base por sucursal
-En vez de utilizar un modelo de tenant (base de datos única para todos los clientes añadiendo un `branchId` a cada tabla), GastroFlow emplea un enfoque multi-tenant físico: una base de datos PostgreSQL separada para cada sucursal (ej. `gastroflow_demo_centro` y `gastroflow_demo_norte`).
+Una base compartida separaría tenants con `branchId` en cada tabla. GastroFlow usa una base PostgreSQL por sucursal: `gastroflow_demo_centro` y `gastroflow_demo_norte` tienen la misma estructura, pero almacenamiento y conexiones independientes.
 
-## Por qué usamos bases separadas
-- **Aislamiento de Datos**: Garantiza que un error o ataque en una sucursal no comprometa datos de otras.
-- **Rendimiento predecible**: Una sucursal muy ocupada no saturará la base de datos de las demás.
-- **Manejo legal de la información**: Permite a una sucursal realizar respaldos físicos directos sin filtrar información a otros.
+## Selección segura
 
-## Selección de Conexión
-La selección se realiza en `core-service` mediante el `BranchDatabaseService`. Al recibir un token que incluye el `branchId` o `branchCode`, este servicio consulta la base de Control (`gastroflow_control`) para recuperar el nombre, host, usuario y clave cifrada de la BD de esa sucursal. 
+1. Core recibe internamente un `branchId` o `branchCode`.
+2. Consulta la sucursal en `gastroflow_control`.
+3. Valida empresa, sucursal, suscripción y vencimiento.
+4. Descifra la contraseña con AES-256-GCM.
+5. Construye la URL exclusivamente en backend.
+6. Reutiliza el cliente guardado en caché por `branchId`.
 
-## Seguridad de Credenciales
-Bajo ninguna circunstancia se envía el `databaseUrl` o credenciales crudas al Frontend, ni siquiera encriptadas. Todo el enrutamiento es server-side.
+Controllers y frontend nunca proporcionan `databaseUrl`. La caché elimina conexiones fallidas y desconecta todos los clientes al apagar Core.
 
-## Caché de Clientes
-Crear una instancia de Prisma (`PrismaClient`) es costoso. Se utiliza `BranchConnectionCacheService` para guardar en memoria instancias activas de los clientes Prisma de cada sucursal, evitando sobrecargar PostgreSQL con nuevas conexiones.
+## Alta de una sucursal
 
-## Proceso de Nueva Sucursal
-1. Validar la compañía y límite de plan.
-2. Crear la base de datos PostgreSQL.
-3. Aplicar migraciones (`prisma migrate deploy`).
-4. Registrar los datos en la base de Control (encriptando la contraseña).
-5. Ejecutar los seeds iniciales.
+`npm run branches:create -- --companyId <uuid> --branchName <nombre> --branchCode <CODIGO> --databaseName <nombre_seguro>` valida identificadores y límite del plan, crea la base, despliega migraciones, ejecuta el seed inicial y sólo entonces registra la sucursal activa. Si falla, intenta eliminar la base parcial.
 
-## Ventajas y Desventajas
-- **Ventajas**: Aislamiento total, escalabilidad sencilla, copias de seguridad dedicadas.
-- **Desventajas**: Mayor consumo de memoria para múltiples PrismaClients, migraciones más complejas (aplicables a cientos de BD en un futuro).
+## Ventajas y costes
+
+Ventajas: aislamiento fuerte, restauración individual, menor riesgo de consultas entre sucursales y escalamiento independiente. Desventajas: más conexiones, migraciones coordinadas, observabilidad distribuida y mayor trabajo operativo. `branches:migrate-all` y `branches:status` reducen ese coste sin revelar credenciales.

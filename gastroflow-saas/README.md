@@ -1,225 +1,70 @@
 # GastroFlow SaaS
 
-Sistema de gestión de restaurantes multi-sucursal construido con arquitectura de microservicios.
+Base de una plataforma multi-sucursal con cuatro proyectos independientes:
 
-## Descripción
-
-GastroFlow SaaS permite a empresas con múltiples sucursales gestionar pedidos, inventario, mesas, usuarios y reportes desde un único sistema SaaS, con bases de datos independientes por sucursal para máximo aislamiento de datos.
-
-## Estructura del Proyecto
-
-```
-gastroflow-saas/
-├── api-gateway/        # Entrada HTTP única (puerto 3000)
-├── core-service/       # Lógica de negocio, TCP (puerto 3001)
-├── audit-service/      # Auditoría, TCP (puerto 3002)
-├── frontend/           # Aplicación React, Vite (puerto 5173)
-├── docs/               # Documentación técnica
-├── postman/            # Colecciones Postman
-├── docker-compose.yml  # Bases de datos PostgreSQL
-├── package.json        # Scripts raíz con concurrently
-└── PROJECT_SPEC.md     # Especificaciones del proyecto
-```
-
-## Responsabilidades
-
-| Servicio | Rol | Puerto |
-|----------|-----|--------|
-| `api-gateway` | Entrada HTTP, validación DTOs, enrutamiento TCP | 3000 |
-| `core-service` | Lógica de negocio, autenticación, multi-tenant DBs | 3001 (TCP) |
-| `audit-service` | Registro de eventos de seguridad y operaciones | 3002 (TCP) |
-| `frontend` | Interfaz React/Vite | 5173 |
+- `api-gateway`: NestJS HTTP en 3000.
+- `core-service`: NestJS TCP en 3001 y persistencia de control/sucursales.
+- `audit-service`: NestJS TCP en 3002 y persistencia exclusiva de auditoría.
+- `frontend`: React/Vite en 5173, pantalla temporal de salud.
 
 ## Requisitos
 
-- Node.js 18+ o 20+
-- npm 9+
-- PostgreSQL 15+ (vía Docker recomendado)
-- Docker y Docker Compose (opcional pero recomendado)
+- Node.js 24 (Prisma 7 requiere Node 20.19+, 22.12+ o 24+).
+- npm 11.
+- Docker y Docker Compose para PostgreSQL de desarrollo.
 
 ## Instalación
 
-```bash
-# Instalar dependencias de cada servicio
-cd api-gateway && npm install
-cd ../core-service && npm install
-cd ../audit-service && npm install
-cd ../frontend && npm install
-cd ..
-npm install    # Instala concurrently en raíz
-```
+Ejecutar `npm install` en la raíz y en cada uno de los cuatro proyectos. Copiar cada `.env.example` a `.env`; la clave `BRANCH_DB_ENCRYPTION_KEY` debe reemplazarse por 32 bytes reales de desarrollo.
 
-## Variables de Entorno
-
-Copiar los archivos `.env.example` a `.env` en cada servicio:
+## PostgreSQL local
 
 ```bash
-cp api-gateway/.env.example api-gateway/.env
-cp core-service/.env.example core-service/.env
-cp audit-service/.env.example audit-service/.env
-cp frontend/.env.example frontend/.env
+npm run db:up
+npm run db:logs
+npm run db:down
 ```
 
-### api-gateway `.env.example`
-```
-PORT=3000
-CORE_SERVICE_HOST=127.0.0.1
-CORE_SERVICE_PORT=3001
-AUDIT_SERVICE_HOST=127.0.0.1
-AUDIT_SERVICE_PORT=3002
-CORS_ORIGIN=*
-```
+El contenedor crea `gastroflow_control`, `gastroflow_audit`, `gastroflow_demo_centro` y `gastroflow_demo_norte` en un servidor PostgreSQL, manteniéndolas como bases separadas.
 
-### core-service `.env.example`
-```
-PORT=3001
-CORE_SERVICE_HOST=127.0.0.1
-CORE_SERVICE_PORT=3001
-AUDIT_SERVICE_HOST=127.0.0.1
-AUDIT_SERVICE_PORT=3002
-```
+`npm run db:reset` elimina el volumen y todos los datos locales. Es destructivo.
 
-### audit-service `.env.example`
-```
-PORT=3002
-AUDIT_SERVICE_HOST=127.0.0.1
-AUDIT_SERVICE_PORT=3002
-```
-
-### frontend `.env.example`
-```
-VITE_API_URL=http://localhost:3000/api/v1
-```
-
-## Cómo Iniciar
-
-### Iniciar cada servicio individualmente
+## Preparación de Prisma
 
 ```bash
-# Terminal 1 — API Gateway
-cd api-gateway && npm run start:dev
-
-# Terminal 2 — Core Service
-cd core-service && npm run start:dev
-
-# Terminal 3 — Audit Service
-cd audit-service && npm run start:dev
-
-# Terminal 4 — Frontend
-cd frontend && npm run dev
-```
-
-### Iniciar todo simultáneamente
-
-```bash
-# Desde la raíz gastroflow-saas/
-npm run start:all
-```
-
-## Build de Producción
-
-```bash
-# Compilar todos los servicios
-npm run build:all
-
-# O individualmente:
-cd api-gateway && npm run build
-cd core-service && npm run build
-cd audit-service && npm run build
-cd frontend && npm run build
-```
-
-## Pruebas
-
-```bash
-# api-gateway
-cd api-gateway
-npm run test          # Pruebas unitarias
-npm run test:e2e      # Pruebas e2e
-npm run lint          # Linter
-
-# core-service
 cd core-service
-npm run test
-npm run test:e2e
-npm run lint
+npm run prisma:control:generate
+npm run prisma:control:deploy
+npm run prisma:control:seed
+npm run prisma:branch:generate
+npm run prisma:branch:deploy:centro
+npm run prisma:branch:deploy:norte
+npm run prisma:branch:seed:centro
+npm run prisma:branch:seed:norte
+npm run verify:branch-isolation
+npm run branches:status
 
-# audit-service
-cd audit-service
-npm run test
-npm run test:e2e
-npm run lint
-
-# frontend
-cd frontend
-npm run lint
-npm run build
+cd ../audit-service
+npm run prisma:generate
+npm run prisma:deploy
+npm run prisma:seed
 ```
 
-## Endpoint Health Check
+Los comandos completos y el proceso de nuevas sucursales están en `docs/MIGRATIONS.md` y `docs/DATABASE_PER_BRANCH.md`.
 
-```
-GET http://localhost:3000/api/v1/health
-```
-
-Respuesta cuando todos los servicios están disponibles:
-```json
-{
-  "status": "ok",
-  "service": "api-gateway",
-  "dependencies": {
-    "coreService": "ok",
-    "auditService": "ok"
-  }
-}
-```
-
-| `status` | Significado |
-|----------|-------------|
-| `ok` | Todos los servicios responden |
-| `degraded` | `audit-service` no responde, `core-service` sí |
-| `unavailable` | `core-service` no responde → HTTP 503 |
-
-## Bases de Datos (con Docker)
+## Desarrollo y verificación
 
 ```bash
-# Levantar todas las bases de datos
-docker-compose up -d
-
-# Bases disponibles:
-# gastroflow_control  → localhost:5432
-# gastroflow_audit    → localhost:5433
-# gastroflow_demo_centro → localhost:5434
-# gastroflow_demo_norte  → localhost:5435
+npm run start:all
+npm run build:all
 ```
 
-## Comunicación entre Servicios
+Cada proyecto ofrece sus propios `lint`, `test`, `test:e2e` y `build`. Core y Audit añaden `test:integration`, que requiere `RUN_DATABASE_TESTS=true` y PostgreSQL preparado.
 
-```
-Frontend → HTTP → api-gateway → TCP → core-service → TCP → audit-service
-```
+## Estado
 
-## Estado Actual
+- Fase 1: completada.
+- Fase 2: implementación en repositorio terminada; verificación real de migraciones, seeds y aislamiento pendiente cuando PostgreSQL de desarrollo esté disponible.
+- Fase 3: autenticación JWT y RBAC pendiente.
 
-✅ Fase 1 completada:
-- Cuatro proyectos independientes inicializados
-- Comunicación TCP configurada
-- Health check funcional
-- Variables de entorno con ConfigModule
-- Pruebas unitarias y e2e
-- Documentación inicial
-
-🔜 Siguiente fase — Prisma y Bases de Datos:
-- Schema de control (`gastroflow_control`)
-- Schema de auditoría (`gastroflow_audit`)
-- Schemas operacionales por sucursal
-- Conexión dinámica a bases de datos por sucursal
-
-## Fases del Proyecto
-
-1. ✅ Estructura base y comunicación entre servicios
-2. 🔜 Bases de datos, Prisma y multi-tenancy
-3. ⬜ Autenticación JWT, RBAC y Guards
-4. ⬜ Módulos de negocio (pedidos, inventario, pagos)
-5. ⬜ Frontend completo con React
-6. ⬜ Pruebas e2e completas y documentación Swagger
+No existen todavía endpoints completos de autenticación, productos, inventario, pedidos o pagos.

@@ -15,11 +15,13 @@ Estado: implementada.
 
 ## Fase 2 — Persistencia con Prisma
 
-Estado: pendiente.
+Estado: implementada en código, pendiente de verificación PostgreSQL.
 
-- Incorporar Prisma.
-- Diseñar las bases de control, auditoría y sucursales.
-- Definir migraciones y datos iniciales de desarrollo.
+- Prisma 7 con clientes separados para control, sucursal y auditoría.
+- Bases independientes de control, auditoría, Centro y Norte.
+- Migraciones, seeds, cifrado, selección dinámica y caché de conexiones.
+- Scripts de alta, migración, estado y aislamiento.
+- Pendiente ejecutar migraciones, seeds y aislamiento en PostgreSQL de desarrollo.
 
 ## Fase 3 — Autenticación y autorización
 
@@ -61,4 +63,4 @@ Estado: pendiente.
 - Ampliación de pruebas.
 - Preparación de la presentación y entrega.
 
-Prisma, JWT, RBAC, inventario, pedidos, pagos y las garantías ACID no forman parte de la implementación actual.
+Los modelos de Prisma para fases futuras ya existen. JWT, RBAC funcional, endpoints de inventario, pedidos, pagos y sus garantías transaccionales siguen pendientes.

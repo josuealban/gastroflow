@@ -6,12 +6,15 @@ import {
 
 describe('BranchConnectionCacheService', () => {
   it('reuses the same client for a branch', async () => {
+    const connectMock = jest.fn().mockResolvedValue(undefined);
+    const disconnectMock = jest.fn().mockResolvedValue(undefined);
     const client = {
-      $connect: jest.fn().mockResolvedValue(undefined),
-      $disconnect: jest.fn().mockResolvedValue(undefined),
+      $connect: connectMock,
+      $disconnect: disconnectMock,
     } as unknown as BranchPrismaClient;
+    const createMock = jest.fn().mockReturnValue(client);
     const factory = {
-      create: jest.fn().mockReturnValue(client),
+      create: createMock,
     } as unknown as BranchPrismaClientFactory;
     const cache = new BranchConnectionCacheService(factory);
     const connection = {
@@ -26,10 +29,10 @@ describe('BranchConnectionCacheService', () => {
     const second = await cache.getOrCreate('branch-1', connection);
 
     expect(first).toBe(second);
-    expect(factory.create).toHaveBeenCalledTimes(1);
-    expect(client.$connect).toHaveBeenCalledTimes(1);
+    expect(createMock).toHaveBeenCalledTimes(1);
+    expect(connectMock).toHaveBeenCalledTimes(1);
     await cache.onModuleDestroy();
-    expect(client.$disconnect).toHaveBeenCalledTimes(1);
+    expect(disconnectMock).toHaveBeenCalledTimes(1);
   });
 
   it('removes a failed connection from the cache', async () => {
@@ -41,11 +44,12 @@ describe('BranchConnectionCacheService', () => {
       $connect: jest.fn().mockResolvedValue(undefined),
       $disconnect: jest.fn().mockResolvedValue(undefined),
     } as unknown as BranchPrismaClient;
+    const createMock = jest
+      .fn()
+      .mockReturnValueOnce(failedClient)
+      .mockReturnValueOnce(workingClient);
     const factory = {
-      create: jest
-        .fn()
-        .mockReturnValueOnce(failedClient)
-        .mockReturnValueOnce(workingClient),
+      create: createMock,
     } as unknown as BranchPrismaClientFactory;
     const cache = new BranchConnectionCacheService(factory);
     const connection = {
@@ -62,6 +66,6 @@ describe('BranchConnectionCacheService', () => {
     await expect(cache.getOrCreate('branch-1', connection)).resolves.toBe(
       workingClient,
     );
-    expect(factory.create).toHaveBeenCalledTimes(2);
+    expect(createMock).toHaveBeenCalledTimes(2);
   });
 });

@@ -1,36 +1,40 @@
-# Database Model
+# Modelo de datos
 
-## Control Model
-- **Company**: Representa una empresa cliente.
-- **Branch**: Representa una sucursal física de la empresa, y contiene la configuración (Host, nombre, etc.) para conectar a su base de datos propia.
-- **Plan**: Planes de suscripción disponibles.
-- **Subscription**: La suscripción activa de una empresa.
-- **PlatformAdmin**: Administradores del SaaS (superusuarios).
-- **GlobalOutboxEvent**: Mensajes a emitir por el sistema central.
+GastroFlow separa la administración global, la auditoría y la operación de cada sucursal en bases PostgreSQL diferentes.
 
-## Branch Model
-Cada sucursal posee su base de datos aislada con las siguientes tablas:
-- **User, Role, Permission**: Sistema RBAC.
-- **Category, Product, Recipe, InventoryItem**: Menú e inventario.
-- **RestaurantTable, Customer, Reservation**: Manejo de espacio físico y clientes.
-- **Order, OrderItem, Payment**: Gestión de ventas.
-- **Supplier, Purchase, InventoryMovement**: Adquisiciones de stock.
-- **OutboxEvent**: Comunicación desde la sucursal al resto del sistema.
+## Base de control
 
-## Audit Model
-- **AuditLog**: Eventos del negocio.
-- **SecurityEvent**: Inicios de sesión fallidos o intentos de intrusión.
-- **IntegrationError**: Registro de errores técnicos al integrar microservicios.
+- `Company` agrupa sucursales y tiene una suscripción.
+- `Branch` registra código, nombre de base y credenciales cifradas. No contiene datos operativos.
+- `Plan` define límites y precio `Decimal`; `Subscription` relaciona una empresa con un plan.
+- `PlatformAdmin` reserva administradores globales con `passwordHash`.
+- `GlobalOutboxEvent` prepara publicación confiable de eventos futuros.
 
-## Relaciones principales
-- Company 1:N Branch
-- Role N:M Permission
-- User N:M Role
-- Order 1:N OrderItem
-- Recipe N:M InventoryItem
+Relaciones: Company 1:N Branch, Company 1:1 Subscription y Plan 1:N Subscription. Las relaciones críticas usan `Restrict`, no cascadas destructivas. `SubscriptionStatus` y `OutboxStatus` modelan sus ciclos de vida.
 
-## Enums
-Usados en Control (`SubscriptionStatus`), Auditoría (`AuditSeverity`), y Sucursal (`OrderStatus`, `TableStatus`, `PaymentMethod`, etc.).
+## Base operacional por sucursal
 
-## Decisiones de Normalización
-Se decidió separar por completo el catálogo operacional (Productos, Pedidos, Usuarios de Restaurante) de la gestión administrativa del SaaS. Los decimales se usan para manejar finanzas e inventario evitando imprecisiones numéricas de punto flotante.
+- Seguridad futura: `User`, `Role`, `Permission`, `UserRole`, `RolePermission` y `RefreshToken`.
+- Catálogo: `Category`, `Product`, `Recipe` y `RecipeItem`.
+- Sala y clientes: `RestaurantTable`, `Customer` y `Reservation`.
+- Venta futura: `Order`, `OrderItem` y `Payment`.
+- Abastecimiento: `InventoryItem`, `Supplier`, `Purchase`, `PurchaseItem` e `InventoryMovement`.
+- Integración futura: `OutboxEvent`.
+
+User y Role, y Role y Permission, son relaciones N:M explícitas. Recipe es única por Product y relaciona ingredientes mediante RecipeItem. Los productos con historial, ingredientes con movimientos y entidades financieras usan relaciones restrictivas.
+
+Los estados de mesas, reservas, pedidos, pagos, compras, inventario y outbox se expresan mediante enums. Importes y cantidades usan `Decimal`; fechas de consulta frecuente, estados y claves foráneas tienen índices.
+
+No existe `branchId` en las tablas operacionales: Centro y Norte son bases físicas distintas con el mismo schema de plantilla.
+
+## Base de auditoría
+
+- `AuditLog` registra acciones con severidad y `externalEventId` único.
+- `SecurityEvent` reserva eventos de autenticación y seguridad.
+- `IntegrationError` registra fallos de integración y su resolución.
+
+Los identificadores externos permiten idempotencia. `AuditSeverity` diferencia INFO, WARNING, ERROR y CRITICAL. Audit no tiene relaciones directas con las otras bases para conservar independencia.
+
+## Normalización
+
+El control no duplica datos operativos; cada sucursal normaliza sus relaciones internas; Audit conserva referencias externas sin claves foráneas distribuidas. Esta decisión evita un acoplamiento transaccional imposible entre bases y deja la propagación futura a los outbox.

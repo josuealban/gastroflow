@@ -68,9 +68,8 @@ export class BranchDatabaseService {
     const subscription = branch.company.subscription;
     if (
       !subscription ||
-      ![SubscriptionStatus.TRIAL, SubscriptionStatus.ACTIVE].includes(
-        subscription.status as any,
-      )
+      (subscription.status !== SubscriptionStatus.TRIAL &&
+        subscription.status !== SubscriptionStatus.ACTIVE)
     ) {
       throw new Error('Suscripción no habilitada');
     }

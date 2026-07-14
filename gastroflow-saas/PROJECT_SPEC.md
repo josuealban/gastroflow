@@ -67,8 +67,8 @@ Desarrollar un sistema SaaS para la administración integral de restaurantes con
                      ▼                 ▼
 ┌────────────────────────┐   ┌──────────────────────┐
 │     CORE SERVICE       │   │    AUDIT SERVICE      │
-│  NestJS + Prisma +     │──▶│  NestJS + Prisma     │
-│  JWT + RBAC            │   │                      │
+│  NestJS + Prisma       │   │  NestJS + Prisma     │
+│  Control + Branch DB   │   │  Audit DB            │
 │  Puerto 3001 (TCP)     │   │  Puerto 3002 (TCP)   │
 └────────┬───────────────┘   └──────────┬───────────┘
          │                              │
@@ -127,7 +127,7 @@ Desarrollar un sistema SaaS para la administración integral de restaurantes con
 | Código | Descripción |
 |--------|-------------|
 | RNF-01 | Cada sucursal usa una base de datos PostgreSQL independiente |
-| RNF-02 | Las contraseñas se almacenan con bcrypt (factor 10) |
+| RNF-02 | Las contraseñas de usuario se almacenan con bcrypt; la autenticación se implementará en Fase 3 |
 | RNF-03 | Los JWT expiran en 15 minutos; refresh token en 7 días |
 | RNF-04 | La API responde en menos de 500ms en condiciones normales |
 | RNF-05 | Ninguna credencial de base de datos se expone en respuestas HTTP |
@@ -139,14 +139,14 @@ Desarrollar un sistema SaaS para la administración integral de restaurantes con
 |--------|---------|--------|
 | Health | api-gateway, core, audit | ✅ Completo |
 | Auth | core-service | 🔜 Fase 3 |
-| Companies & Branches | core-service | 🔜 Fase 2 |
+| Companies & Branches | core-service | 🟡 Modelo y servicios; verificación DB pendiente |
 | Users & Roles | core-service | 🔜 Fase 3 |
 | Products | core-service | 🔜 Fase 4 |
 | Tables | core-service | 🔜 Fase 4 |
 | Orders | core-service | 🔜 Fase 4 |
 | Payments | core-service | 🔜 Fase 4 |
 | Inventory | core-service | 🔜 Fase 4 |
-| Audit Logs | audit-service | 🔜 Fase 2 |
+| Audit Logs | audit-service | 🟡 Modelo Prisma; handlers pendientes |
 | Frontend Dashboard | frontend | 🔜 Fase 5 |
 
 ## Bases de Datos
@@ -163,7 +163,7 @@ Desarrollar un sistema SaaS para la administración integral de restaurantes con
 | Fase | Descripción | Estado |
 |------|-------------|--------|
 | 1 | Estructura base y comunicación entre microservicios | ✅ Completo |
-| 2 | Bases de datos, Prisma ORM y multi-tenancy | 🔜 Siguiente |
+| 2 | Bases de datos, Prisma ORM y base por sucursal | 🟡 Implementada; verificación PostgreSQL pendiente |
 | 3 | Autenticación JWT, RBAC y Guards | ⬜ Pendiente |
 | 4 | Módulos de negocio completos | ⬜ Pendiente |
 | 5 | Frontend React completo | ⬜ Pendiente |
