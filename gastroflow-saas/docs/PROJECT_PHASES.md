@@ -1,5 +1,9 @@
 # Fases del proyecto
 
+## Fase 2 — implementada y verificada
+
+Prisma definitivo, `gastroflow_control`, base operacional por sucursal, migraciones, seeds, vistas, cifrado, resolución TCP y caché están implementados. La verificación usó PostgreSQL real. Docker Compose quedó preparado, aunque Docker no estaba instalado en el equipo de verificación. Fase 3 no fue iniciada.
+
 ## Parte 0 — congelación
 
 Inspeccionar, resolver contradicciones en documentación, congelar decisiones y construir la hoja de ruta. No modifica lógica ni persistencia.

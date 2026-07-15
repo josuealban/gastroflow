@@ -1,11 +1,12 @@
-# Prisma — diseño pendiente de Fase 2
+# Prisma en GastroFlow
 
-Prisma será el ORM para PostgreSQL, con un schema central y un schema operacional reutilizable. Core tendrá un cliente de control. Operations necesitará crear o reutilizar clientes según la sucursal activa, sin aceptar URL de base desde el frontend.
+GastroFlow usa Prisma 7.8.0 con dos clientes generados y no versionados:
 
-El ciclo de conexión deberá cubrir inicialización, límites de caché, expiración, invalidación, cierre y errores sanitizados. Los clientes se generarán sólo desde schemas aprobados y nunca se editarán manualmente.
+- Core: `prisma/control/schema.prisma` genera `src/generated/control-client` y accede sólo a `gastroflow_control`.
+- Operations: `prisma/branch/schema.prisma` genera `src/generated/branch-client` y se conecta dinámicamente a cada base de sucursal.
 
-## Estado observado
+`ControlPrismaService` encapsula el cliente central. En Operations, `BranchConnectionResolverClient` solicita la conexión a Core por `{ cmd: 'branch.connection.resolve' }`; la factoría construye la URL exclusivamente en backend y la caché reutiliza y desconecta clientes por `branchId`.
 
-El repositorio ya contiene Prisma 7.8.0, schemas, clientes generados, migrations y seeds para tres bases globales. Esos artefactos provienen del trabajo anterior y contradicen la decisión actual. Parte 0 no instaló Prisma, no generó clientes y no ejecutó migraciones.
+Los clientes se regeneran después de instalar dependencias y antes de compilar. Nunca se editan manualmente ni se envían URLs desde Gateway o frontend.
 
-Fase 2 debe decidir rutas y comandos definitivos, reemplazar el legado de forma revisada y demostrar aislamiento con dos bases físicas de sucursal.
+Comandos: `npm run prisma:generate`, `npm run prisma:migrate:control`, `npm run prisma:migrate:principal`, `npm run prisma:migrate:norte` y `npm run verify:branch-isolation`.

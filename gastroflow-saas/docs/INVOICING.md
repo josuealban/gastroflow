@@ -1,5 +1,9 @@
 # Pedidos y facturación interna
 
+## Estado de Fase 2
+
+El schema implementa configuración tributaria, secuencia, factura e items históricos, además de vistas de resumen. Cada base posee su secuencia iniciada en cero y los seeds no crean facturas legales. Emisión funcional, PDF y SRI permanecen pendientes.
+
 ## Origen
 
 Una factura se genera desde un pedido que contiene uno o varios platillos. No se crea a partir de valores arbitrarios enviados por el cliente.

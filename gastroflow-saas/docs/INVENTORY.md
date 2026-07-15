@@ -1,5 +1,9 @@
 # Inventario
 
+## Estado de Fase 2
+
+El schema operacional implementa `InventoryItem`, `InventoryMovement`, sus enums, índices y `vw_low_stock`. Principal contiene datos académicos; Norte copia el catálogo con stock, costo, dañados y perdidos en cero. Todavía no existen CRUD, descuento automático ni transacción de recepción.
+
 ## Catálogo
 
 Cada base operacional contiene su propio inventario. Los tipos son:

@@ -45,9 +45,9 @@ Presenta una sola aplicación para todos los restaurantes. Tras iniciar sesión 
 
 ## Estado observado
 
-Fase 1 deja operativa la comunicación HTTP/TCP y los health checks sin PostgreSQL. API Gateway usa `/api/v1`, CORS y timeout configurables; Core y Operations arrancan como microservicios TCP con apagado ordenado. Los módulos Prisma provisionales permanecen en el repositorio, pero fueron desacoplados del `AppModule` técnico para no exigir una conexión durante health.
+Fase 2 implementa la persistencia congelada: Core es autoridad de `gastroflow_control` y resuelve por TCP las credenciales cifradas de cada sucursal. Operations crea clientes Prisma dinámicos y los reutiliza en una caché cuya llave es `branchId`. Principal y Norte son bases físicas diferentes que comparten un único schema operacional sin columnas `restaurantId` ni `branchId`.
 
-La persistencia provisional todavía no coincide con la arquitectura congelada: usa bases globales `gastroflow_personal`, `gastroflow_clientes` y `gastroflow_operaciones`, más filtros `restaurantId`. Se reemplazará de forma revisada en Fase 2 y no se ejecutó durante Fase 1.
+El Gateway conserva únicamente HTTP/TCP y no recibe URLs PostgreSQL. Los health checks de Fase 1 siguen operativos y no exponen configuración interna.
 
 ## Restricciones arquitectónicas
 

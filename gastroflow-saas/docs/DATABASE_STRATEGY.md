@@ -40,4 +40,8 @@ La creación de una base no restaura un respaldo completo. Aplica schema limpio,
 
 ## Legado detectado
 
-El árbol actual contiene tres schemas y migraciones para `gastroflow_personal`, `gastroflow_clientes` y `gastroflow_operaciones`, todos compartidos por restaurantes y filtrados con `restaurantId`. También contiene Docker y variables para esas tres bases. Todo ello requiere rediseño en Fase 2; no se eliminará masivamente en Parte 0.
+## Estado implementado en Fase 2
+
+El legado global fue retirado. `gastroflow_control` contiene identidad, suscripción, personal y metadatos cifrados. `gastroflow_demo_principal` y `gastroflow_demo_norte` recibieron el mismo historial operacional. Operations obtiene credenciales mediante el contrato TCP interno de Core; el Gateway nunca conoce URLs de PostgreSQL.
+
+Norte representa una copia de plantilla: comparte estructura y datos maestros con IDs propios, pero inicia sin clientes, pedidos, pagos, facturas, compras ni movimientos.

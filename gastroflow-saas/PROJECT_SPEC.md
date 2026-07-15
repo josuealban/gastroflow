@@ -1,5 +1,11 @@
 # GastroFlow SaaS — Especificación congelada
 
+## Estado alcanzado en Fase 2
+
+Quedaron implementados el modelo central, el schema operacional por sucursal, migraciones, seeds, cinco vistas SQL, cifrado AES-256-GCM, resolución TCP interna y caché dinámica. La prueba física concluye con `PASS: branch databases are isolated`.
+
+No forman parte de esta fase: login, JWT, guards, RBAC ejecutable, endpoints comerciales, `POST /branches`, botón Nueva sucursal, pedidos/pagos funcionales, factura, PDF o frontend comercial.
+
 ## Objetivo general
 
 Construir una plataforma SaaS basada en servicios independientes para gestionar restaurantes, sus sucursales y la operación aislada de cada sucursal.

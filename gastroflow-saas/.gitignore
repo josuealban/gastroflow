@@ -8,3 +8,5 @@
 .DS_Store
 .vscode/
 .idea/
+core-service/src/generated/control-client/
+operations-service/src/generated/branch-client/

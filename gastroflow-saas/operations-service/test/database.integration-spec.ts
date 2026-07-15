@@ -1,123 +1,101 @@
 import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '../src/generated/operations-client/client';
+import { PrismaClient } from '../src/generated/branch-client/client';
 
 const databaseTests =
   process.env.RUN_DATABASE_TESTS === 'true' ? describe : describe.skip;
-const DEMO_RESTAURANT_ID = '10000000-0000-4000-8000-000000000001';
-const TEST_RESTAURANT_ID = '10000000-0000-4000-8000-000000000002';
-const PRODUCT_NAME = 'Producto Compartido Integración';
 
-databaseTests('Operations PostgreSQL integration', () => {
-  let prisma: PrismaClient;
+function create(url: string | undefined): PrismaClient {
+  if (!url) throw new Error('Branch database URL is required');
+  return new PrismaClient({ adapter: new PrismaPg({ connectionString: url }) });
+}
+
+databaseTests('physical branch database integration', () => {
+  let principal: PrismaClient;
+  let norte: PrismaClient;
 
   beforeAll(async () => {
-    const connectionString = process.env.OPERATIONS_DATABASE_URL;
-    if (!connectionString) {
-      throw new Error('OPERATIONS_DATABASE_URL es obligatoria');
-    }
-    prisma = new PrismaClient({
-      adapter: new PrismaPg({ connectionString }),
-    });
-    await prisma.$connect();
+    principal = create(process.env.DEMO_PRINCIPAL_DATABASE_URL);
+    norte = create(process.env.DEMO_NORTE_DATABASE_URL);
+    await Promise.all([principal.$connect(), norte.$connect()]);
   });
 
-  afterAll(async () => {
-    await prisma?.product.deleteMany({ where: { name: PRODUCT_NAME } });
-    await prisma?.$disconnect();
-  });
+  afterAll(async () =>
+    Promise.all([principal?.$disconnect(), norte?.$disconnect()]),
+  );
 
-  it('connects exclusively to gastroflow_operaciones', async () => {
-    const database = await prisma.$queryRaw<Array<{ name: string }>>`
-      SELECT current_database() AS name
-    `;
-    expect(database[0]?.name).toBe('gastroflow_operaciones');
-  });
-
-  it('contains the required operations demo seed', async () => {
-    const [categories, products, tables, suppliers, tax, sequence] =
-      await Promise.all([
-        prisma.category.count({
-          where: { restaurantId: DEMO_RESTAURANT_ID },
-        }),
-        prisma.product.count({
-          where: { restaurantId: DEMO_RESTAURANT_ID },
-        }),
-        prisma.restaurantTable.count({
-          where: { restaurantId: DEMO_RESTAURANT_ID },
-        }),
-        prisma.supplier.count({
-          where: { restaurantId: DEMO_RESTAURANT_ID },
-        }),
-        prisma.taxConfiguration.findFirstOrThrow({
-          where: { restaurantId: DEMO_RESTAURANT_ID, isActive: true },
-        }),
-        prisma.invoiceSequence.findFirstOrThrow({
-          where: { restaurantId: DEMO_RESTAURANT_ID },
-        }),
-      ]);
-    expect(categories).toBeGreaterThanOrEqual(4);
-    expect(products).toBeGreaterThanOrEqual(10);
-    expect(tables).toBeGreaterThanOrEqual(6);
-    expect(suppliers).toBeGreaterThanOrEqual(2);
-    expect(tax.rate.toNumber()).toBe(0.15);
-    expect(sequence).toMatchObject({
-      establishment: '001',
-      emissionPoint: '001',
-      currentNumber: 0,
-    });
-  });
-
-  it('allows equal product names and table numbers across restaurants', async () => {
-    const [demoCategory, testCategory] = await Promise.all([
-      prisma.category.findFirstOrThrow({
-        where: { restaurantId: DEMO_RESTAURANT_ID },
-      }),
-      prisma.category.findFirstOrThrow({
-        where: { restaurantId: TEST_RESTAURANT_ID },
-      }),
+  it('connects to two different physical databases', async () => {
+    const [principalDb, norteDb] = await Promise.all([
+      principal.$queryRaw<
+        Array<{ name: string }>
+      >`SELECT current_database() AS name`,
+      norte.$queryRaw<
+        Array<{ name: string }>
+      >`SELECT current_database() AS name`,
     ]);
-    await prisma.product.create({
-      data: {
-        restaurantId: DEMO_RESTAURANT_ID,
-        categoryId: demoCategory.id,
-        name: PRODUCT_NAME,
-        price: 1,
-      },
-    });
-    await prisma.product.create({
-      data: {
-        restaurantId: TEST_RESTAURANT_ID,
-        categoryId: testCategory.id,
-        name: PRODUCT_NAME,
-        price: 2,
-      },
-    });
-    await expect(
-      prisma.product.create({
-        data: {
-          restaurantId: DEMO_RESTAURANT_ID,
-          categoryId: demoCategory.id,
-          name: PRODUCT_NAME,
-          price: 3,
-        },
-      }),
-    ).rejects.toThrow();
+    expect(principalDb[0]?.name).toBe('gastroflow_demo_principal');
+    expect(norteDb[0]?.name).toBe('gastroflow_demo_norte');
+  });
 
-    const tables = await prisma.restaurantTable.findMany({
-      where: { number: 1 },
-      select: { restaurantId: true },
-    });
-    expect(new Set(tables.map(({ restaurantId }) => restaurantId))).toEqual(
-      new Set([DEMO_RESTAURANT_ID, TEST_RESTAURANT_ID]),
+  it('installs the five required SQL views in both databases', async () => {
+    const expected = [
+      'vw_daily_sales',
+      'vw_inventory_movements_summary',
+      'vw_invoice_summary',
+      'vw_low_stock',
+      'vw_top_selling_products',
+    ];
+    for (const client of [principal, norte]) {
+      const views = await client.$queryRaw<Array<{ name: string }>>`
+        SELECT table_name AS name FROM information_schema.views
+        WHERE table_schema = 'public' AND table_name LIKE 'vw_%' ORDER BY table_name
+      `;
+      expect(views.map(({ name }) => name)).toEqual(expected);
+    }
+  });
+
+  it('seeds Principal and leaves Norte transaction history at zero', async () => {
+    const [
+      products,
+      tables,
+      customers,
+      northProducts,
+      northCustomers,
+      northOrders,
+      northPayments,
+      northInvoices,
+      northMovements,
+    ] = await Promise.all([
+      principal.product.count(),
+      principal.restaurantTable.count(),
+      principal.customer.count(),
+      norte.product.count(),
+      norte.customer.count(),
+      norte.order.count(),
+      norte.payment.count(),
+      norte.invoice.count(),
+      norte.inventoryMovement.count(),
+    ]);
+    expect(products).toBeGreaterThanOrEqual(10);
+    expect(tables).toBe(6);
+    expect(customers).toBeGreaterThanOrEqual(2);
+    expect(northProducts).toBeGreaterThanOrEqual(10);
+    expect([
+      northCustomers,
+      northOrders,
+      northPayments,
+      northInvoices,
+      northMovements,
+    ]).toEqual([0, 0, 0, 0, 0]);
+  });
+
+  it('keeps equal inventory names physically isolated', async () => {
+    const [principalFlour, northFlour] = await Promise.all([
+      principal.inventoryItem.findUniqueOrThrow({ where: { name: 'Harina' } }),
+      norte.inventoryItem.findUniqueOrThrow({ where: { name: 'Harina' } }),
+    ]);
+    expect(Number(principalFlour.currentStock)).not.toBe(
+      Number(northFlour.currentStock),
     );
-    const demoProducts = await prisma.product.findMany({
-      where: { restaurantId: DEMO_RESTAURANT_ID },
-    });
-    expect(
-      demoProducts.some(
-        ({ restaurantId }) => restaurantId === TEST_RESTAURANT_ID,
-      ),
-    ).toBe(false);
   });
 });
