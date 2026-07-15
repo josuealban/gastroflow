@@ -1,5 +1,11 @@
 # GastroFlow SaaS
 
+## Persistencia de Fase 2
+
+La arquitectura activa usa `gastroflow_control` y una base PostgreSQL independiente por sucursal. Principal y Norte comparten el schema de `operations-service/prisma/branch`, sin discriminadores de tenant. Consulte `docs/PRISMA.md`, `docs/MIGRATIONS.md` y `docs/PHASE_2_REPORT.md`.
+
+Copie los `.env.example`, genere la clave AES y el token interno con `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`, ejecute `npm run phase2:setup` y luego `npm run phase2:verify`. `npm run db:reset` elimina deliberadamente el volumen y todos los datos PostgreSQL locales.
+
 GastroFlow es una plataforma SaaS académica para restaurantes con múltiples sucursales. El repositorio conserva cuatro proyectos independientes, sin Nx ni monorepo NestJS.
 
 ## Fase 1 operativa

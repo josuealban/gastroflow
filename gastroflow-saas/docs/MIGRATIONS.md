@@ -17,6 +17,8 @@ La creación de una sucursal debe aplicar todas las migraciones operacionales an
 - Definir qué ocurre si algunas bases migran y otras fallan.
 - No usar `migrate dev` en ambientes compartidos.
 
-## Estado de Parte 0
+## Estado de Fase 2
 
-No se creó ni ejecutó ninguna migración. Las tres migraciones visibles para bases globales son artefactos previos y no deben aplicarse como arquitectura definitiva. Los comandos exactos se definirán en Fase 2, después de aprobar los schemas.
+Existe un historial central en `core-service/prisma/control/migrations` y uno operacional reutilizable en `operations-service/prisma/branch/migrations`. La segunda migración operacional crea `vw_low_stock`, `vw_daily_sales`, `vw_invoice_summary`, `vw_top_selling_products` y `vw_inventory_movements_summary`.
+
+`branches:migrate-all` obtiene sucursales activas mediante Core, continúa ante fallos y presenta un resumen sanitizado. `migrate dev` queda reservado al desarrollo y `migrate deploy` distribuye cambios.

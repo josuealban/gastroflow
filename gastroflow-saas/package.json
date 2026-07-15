@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "GastroFlow SaaS Root",
   "scripts": {
+    "postinstall": "npm --prefix core-service install && npm --prefix operations-service install && npm --prefix api-gateway install && npm --prefix frontend install",
     "start:gateway": "npm --prefix api-gateway run start:dev",
     "start:core": "npm --prefix core-service run start:dev",
     "start:operations": "npm --prefix operations-service run start:dev",
@@ -21,7 +22,23 @@
     "test:gateway": "npm --prefix api-gateway run test -- --runInBand",
     "test:core": "npm --prefix core-service run test -- --runInBand",
     "test:operations": "npm --prefix operations-service run test -- --runInBand",
-    "test": "npm run test:gateway && npm run test:core && npm run test:operations"
+    "test": "npm run test:gateway && npm run test:core && npm run test:operations",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs -f postgres",
+    "db:reset": "docker compose down -v && docker compose up -d postgres",
+    "prisma:generate": "npm --prefix core-service run prisma:control:generate && npm --prefix operations-service run prisma:branch:generate",
+    "prisma:migrate:control": "npm --prefix core-service run prisma:control:migrate",
+    "prisma:migrate:principal": "npm --prefix operations-service run prisma:branch:migrate:principal",
+    "prisma:migrate:norte": "npm --prefix operations-service run prisma:branch:migrate:norte",
+    "prisma:seed:control": "npm --prefix core-service run prisma:control:seed",
+    "prisma:seed:principal": "npm --prefix operations-service run prisma:branch:seed:principal",
+    "prisma:seed:norte": "npm --prefix operations-service run prisma:branch:seed:norte",
+    "branches:migrate-all": "npm --prefix operations-service run branches:migrate-all",
+    "branches:status": "npm --prefix operations-service run branches:status",
+    "verify:branch-isolation": "npm --prefix operations-service run verify:branch-isolation",
+    "phase2:setup": "npm run db:up && npm --prefix operations-service run wait:postgres && npm run prisma:generate && npm run prisma:migrate:control && npm run prisma:migrate:principal && npm run prisma:migrate:norte && npm run prisma:seed:control && npm run prisma:seed:principal && npm run prisma:seed:norte",
+    "phase2:verify": "npm --prefix core-service run prisma:control:validate && npm --prefix operations-service run prisma:branch:validate && npm run verify:branch-isolation && npm run lint && npm run test && npm run build"
   },
   "devDependencies": {
     "concurrently": "^10.0.3"

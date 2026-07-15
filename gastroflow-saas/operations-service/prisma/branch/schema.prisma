@@ -1,0 +1,433 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../../src/generated/branch-client"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum TableStatus {
+  AVAILABLE
+  OCCUPIED
+  RESERVED
+  OUT_OF_SERVICE
+}
+
+enum OrderStatus {
+  OPEN
+  IN_PREPARATION
+  READY
+  DELIVERED
+  PAID
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  TRANSFER
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum InvoiceStatus {
+  ISSUED
+  CANCELLED
+}
+
+enum InventoryItemType {
+  INGREDIENT
+  CONSUMABLE
+  UTENSIL
+}
+
+enum InventoryUnit {
+  UNIT
+  GRAM
+  KILOGRAM
+  MILLILITER
+  LITER
+}
+
+enum InventoryMovementType {
+  PURCHASE_ENTRY
+  MANUAL_ENTRY
+  MANUAL_EXIT
+  ADJUSTMENT
+  WASTE
+  DAMAGED
+  LOST
+  RETURN
+}
+
+enum PurchaseStatus {
+  DRAFT
+  ORDERED
+  RECEIVED
+  CANCELLED
+}
+
+enum OutboxStatus {
+  PENDING
+  PROCESSING
+  PROCESSED
+  FAILED
+}
+
+model Customer {
+  id             String        @id @default(uuid()) @db.Uuid
+  name           String
+  identification String?
+  phone          String?
+  email          String?
+  address        String?
+  notes          String?
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  reservations   Reservation[]
+  orders         Order[]
+  invoices       Invoice[]
+
+  @@index([identification])
+  @@index([name])
+  @@index([phone])
+  @@map("customers")
+}
+
+model Reservation {
+  id              String            @id @default(uuid()) @db.Uuid
+  customerId      String            @db.Uuid
+  tableId         String?           @db.Uuid
+  reservationDate DateTime
+  numberOfGuests  Int
+  status          ReservationStatus @default(PENDING)
+  notes           String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  customer        Customer          @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  table           RestaurantTable?  @relation(fields: [tableId], references: [id], onDelete: SetNull)
+
+  @@index([reservationDate])
+  @@index([status])
+  @@index([customerId])
+  @@index([tableId])
+  @@map("reservations")
+}
+
+model Category {
+  id          String    @id @default(uuid()) @db.Uuid
+  name        String    @unique
+  description String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id           String        @id @default(uuid()) @db.Uuid
+  categoryId   String        @db.Uuid
+  name         String        @unique
+  description  String
+  price        Decimal       @db.Decimal(10, 2)
+  imageUrl     String?
+  isAvailable  Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  category     Category      @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  orderItems   OrderItem[]
+  invoiceItems InvoiceItem[]
+
+  @@index([categoryId])
+  @@index([isAvailable])
+  @@map("products")
+}
+
+model RestaurantTable {
+  id           String        @id @default(uuid()) @db.Uuid
+  number       Int           @unique
+  capacity     Int
+  status       TableStatus   @default(AVAILABLE)
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  reservations Reservation[]
+  orders       Order[]
+
+  @@index([status])
+  @@index([isActive])
+  @@map("restaurant_tables")
+}
+
+model Order {
+  id                 String           @id @default(uuid()) @db.Uuid
+  customerId         String?          @db.Uuid
+  waiterUserId       String           @db.Uuid
+  tableId            String?          @db.Uuid
+  status             OrderStatus      @default(OPEN)
+  subtotal           Decimal          @db.Decimal(12, 2)
+  tax                Decimal          @db.Decimal(12, 2)
+  total              Decimal          @db.Decimal(12, 2)
+  notes              String?
+  cancellationReason String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  customer           Customer?        @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  table              RestaurantTable? @relation(fields: [tableId], references: [id], onDelete: SetNull)
+  items              OrderItem[]
+  payments           Payment[]
+  invoice            Invoice?
+
+  @@index([customerId])
+  @@index([waiterUserId])
+  @@index([tableId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id          String   @id @default(uuid()) @db.Uuid
+  orderId     String   @db.Uuid
+  productId   String?  @db.Uuid
+  productName String
+  quantity    Int
+  unitPrice   Decimal  @db.Decimal(10, 2)
+  subtotal    Decimal  @db.Decimal(12, 2)
+  notes       String?
+  createdAt   DateTime @default(now())
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([productId])
+  @@index([productName])
+  @@map("order_items")
+}
+
+model Payment {
+  id        String        @id @default(uuid()) @db.Uuid
+  orderId   String        @db.Uuid
+  amount    Decimal       @db.Decimal(12, 2)
+  method    PaymentMethod
+  status    PaymentStatus @default(PENDING)
+  reference String?
+  paidAt    DateTime
+  createdAt DateTime      @default(now())
+  order     Order         @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@index([status])
+  @@index([paidAt])
+  @@map("payments")
+}
+
+model TaxConfiguration {
+  id            String    @id @default(uuid()) @db.Uuid
+  name          String
+  rate          Decimal   @db.Decimal(5, 4)
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([isActive])
+  @@index([effectiveFrom])
+  @@map("tax_configurations")
+}
+
+model InvoiceSequence {
+  id            String   @id @default(uuid()) @db.Uuid
+  establishment String
+  emissionPoint String
+  currentNumber Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([establishment, emissionPoint])
+  @@map("invoice_sequences")
+}
+
+model Invoice {
+  id                     String        @id @default(uuid()) @db.Uuid
+  orderId                String        @unique @db.Uuid
+  customerId             String?       @db.Uuid
+  createdByUserId        String        @db.Uuid
+  invoiceNumber          String        @unique
+  status                 InvoiceStatus @default(ISSUED)
+  customerName           String
+  customerIdentification String?
+  customerEmail          String?
+  subtotal               Decimal       @db.Decimal(12, 2)
+  taxRate                Decimal       @db.Decimal(5, 4)
+  taxAmount              Decimal       @db.Decimal(12, 2)
+  total                  Decimal       @db.Decimal(12, 2)
+  pdfUrl                 String?
+  issuedAt               DateTime
+  archivedAt             DateTime?
+  cancelledAt            DateTime?
+  cancellationReason     String?
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+  order                  Order         @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  customer               Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  items                  InvoiceItem[]
+
+  @@index([invoiceNumber])
+  @@index([issuedAt])
+  @@index([archivedAt])
+  @@index([status])
+  @@index([customerIdentification])
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id          String   @id @default(uuid()) @db.Uuid
+  invoiceId   String   @db.Uuid
+  productId   String?  @db.Uuid
+  productName String
+  quantity    Int
+  unitPrice   Decimal  @db.Decimal(10, 2)
+  subtotal    Decimal  @db.Decimal(12, 2)
+  createdAt   DateTime @default(now())
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([invoiceId])
+  @@index([productId])
+  @@map("invoice_items")
+}
+
+model InventoryItem {
+  id              String              @id @default(uuid()) @db.Uuid
+  name            String              @unique
+  description     String?
+  type            InventoryItemType
+  unit            InventoryUnit
+  currentStock    Decimal             @default(0) @db.Decimal(12, 3)
+  minimumStock    Decimal             @default(0) @db.Decimal(12, 3)
+  costPerUnit     Decimal             @default(0) @db.Decimal(12, 4)
+  damagedQuantity Decimal             @default(0) @db.Decimal(12, 3)
+  lostQuantity    Decimal             @default(0) @db.Decimal(12, 3)
+  isActive        Boolean             @default(true)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  movements       InventoryMovement[]
+  purchaseItems   PurchaseItem[]
+
+  @@index([type])
+  @@index([isActive])
+  @@map("inventory_items")
+}
+
+model InventoryMovement {
+  id              String                @id @default(uuid()) @db.Uuid
+  inventoryItemId String                @db.Uuid
+  createdByUserId String?               @db.Uuid
+  type            InventoryMovementType
+  quantity        Decimal               @db.Decimal(12, 3)
+  previousStock   Decimal               @db.Decimal(12, 3)
+  newStock        Decimal               @db.Decimal(12, 3)
+  reason          String?
+  referenceType   String?
+  referenceId     String?
+  createdAt       DateTime              @default(now())
+  inventoryItem   InventoryItem         @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+
+  @@index([inventoryItemId])
+  @@index([createdByUserId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("inventory_movements")
+}
+
+model Supplier {
+  id        String     @id @default(uuid()) @db.Uuid
+  name      String
+  taxId     String?
+  phone     String?
+  email     String?
+  address   String?
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  purchases Purchase[]
+
+  @@index([name])
+  @@index([taxId])
+  @@index([isActive])
+  @@map("suppliers")
+}
+
+model Purchase {
+  id              String         @id @default(uuid()) @db.Uuid
+  supplierId      String         @db.Uuid
+  createdByUserId String         @db.Uuid
+  invoiceNumber   String?
+  status          PurchaseStatus @default(DRAFT)
+  subtotal        Decimal        @db.Decimal(12, 2)
+  tax             Decimal        @db.Decimal(12, 2)
+  total           Decimal        @db.Decimal(12, 2)
+  receivedAt      DateTime?
+  cancelledAt     DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  supplier        Supplier       @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  items           PurchaseItem[]
+
+  @@index([supplierId])
+  @@index([createdByUserId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("purchases")
+}
+
+model PurchaseItem {
+  id              String        @id @default(uuid()) @db.Uuid
+  purchaseId      String        @db.Uuid
+  inventoryItemId String        @db.Uuid
+  quantity        Decimal       @db.Decimal(12, 3)
+  unitCost        Decimal       @db.Decimal(12, 4)
+  subtotal        Decimal       @db.Decimal(12, 2)
+  purchase        Purchase      @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+
+  @@index([purchaseId])
+  @@index([inventoryItemId])
+  @@map("purchase_items")
+}
+
+model OutboxEvent {
+  id            String       @id @default(uuid()) @db.Uuid
+  eventType     String
+  aggregateType String
+  aggregateId   String?
+  payload       Json
+  status        OutboxStatus @default(PENDING)
+  attempts      Int          @default(0)
+  lastError     String?
+  createdAt     DateTime     @default(now())
+  processedAt   DateTime?
+
+  @@index([status, createdAt])
+  @@index([aggregateType, aggregateId])
+  @@map("outbox_events")
+}

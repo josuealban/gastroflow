@@ -1,4 +1,4 @@
-# Modelo de datos previsto
+# Modelo de datos implementado en Fase 2
 
 ## Central — `gastroflow_control`
 
@@ -21,4 +21,4 @@ Los importes y cantidades sensibles a precisión usarán Decimal. Items de pedid
 
 ## Estado
 
-Diseño `DOCUMENTED`. Los schemas actuales del repositorio modelan otra arquitectura y no son la implementación de este documento.
+Los dos schemas Prisma, sus relaciones, migraciones y seeds están implementados y fueron probados contra PostgreSQL 18. Las tablas operacionales no contienen `restaurantId` ni `branchId`; el aislamiento se comprobó físicamente entre dos bases.

@@ -1,5 +1,16 @@
 # Lista de tareas
 
+## Fase 2 — completada técnicamente
+
+- [x] Retirar Prisma provisional y las tres bases globales.
+- [x] Crear schema, migración y seed de `gastroflow_control`.
+- [x] Crear schema operacional reutilizable sin `restaurantId` ni `branchId`.
+- [x] Migrar y sembrar Principal y Norte.
+- [x] Cifrar credenciales con AES-256-GCM.
+- [x] Resolver conexiones por TCP y reutilizar Prisma Clients por sucursal.
+- [x] Crear cinco vistas SQL y verificar aislamiento físico.
+- [ ] Implementar autenticación/JWT en Fase 3.
+
 `[x]` significa que existe evidencia en el repositorio o en el informe de la fase. No implica que una implementación heredada y contradictoria sea válida.
 
 ## Parte 0 — congelación

@@ -1,5 +1,9 @@
 # Modelo de sucursales
 
+## Estado de Fase 2
+
+`Branch`, `UserBranch` y `UserBranchRole` están implementados en `gastroflow_control`. Las credenciales se cifran con AES-256-GCM y sólo Core puede descifrarlas para Operations por TCP. Principal y Norte demostraron selección dinámica, caché y aislamiento físico. El endpoint público de creación permanece pendiente.
+
 ## Definición
 
 `Branch` representa una ubicación operativa de un restaurante. Se almacena en `gastroflow_control` y mantiene la referencia necesaria para que Operations resuelva su base. No es una instancia de aplicación ni un microservicio.

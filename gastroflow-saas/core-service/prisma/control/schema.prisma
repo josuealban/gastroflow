@@ -1,0 +1,250 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../../src/generated/control-client"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum BranchStatus {
+  PROVISIONING
+  ACTIVE
+  INACTIVE
+  FAILED
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  EXPIRED
+  SUSPENDED
+}
+
+model Restaurant {
+  id           String        @id @default(uuid()) @db.Uuid
+  name         String
+  legalName    String?
+  taxId        String?
+  email        String
+  phone        String?
+  address      String?
+  logoUrl      String?
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  branches     Branch[]
+  users        User[]
+  roles        Role[]
+  subscription Subscription?
+
+  @@index([isActive])
+  @@index([taxId])
+  @@index([email])
+  @@map("restaurants")
+}
+
+model Branch {
+  id                        String       @id @default(uuid()) @db.Uuid
+  restaurantId              String       @db.Uuid
+  name                      String
+  code                      String
+  description               String?
+  address                   String?
+  city                      String?
+  phone                     String?
+  latitude                  Decimal?     @db.Decimal(10, 7)
+  longitude                 Decimal?     @db.Decimal(10, 7)
+  isPrimary                 Boolean      @default(false)
+  status                    BranchStatus @default(PROVISIONING)
+  databaseName              String       @unique
+  databaseHost              String
+  databasePort              Int
+  databaseUser              String
+  encryptedDatabasePassword String
+  provisioningError         String?
+  activatedAt               DateTime?
+  createdAt                 DateTime     @default(now())
+  updatedAt                 DateTime     @updatedAt
+  restaurant                Restaurant   @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
+  userBranches              UserBranch[]
+
+  @@unique([restaurantId, code])
+  @@index([restaurantId])
+  @@index([status])
+  @@index([isPrimary])
+  @@index([createdAt])
+  @@map("branches")
+}
+
+model Plan {
+  id                   String         @id @default(uuid()) @db.Uuid
+  name                 String         @unique
+  description          String?
+  price                Decimal        @db.Decimal(10, 2)
+  maxBranches          Int
+  maxUsersPerBranch    Int
+  maxTablesPerBranch   Int
+  maxProductsPerBranch Int
+  isActive             Boolean        @default(true)
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  subscriptions        Subscription[]
+
+  @@index([isActive])
+  @@map("plans")
+}
+
+model Subscription {
+  id           String             @id @default(uuid()) @db.Uuid
+  restaurantId String             @unique @db.Uuid
+  planId       String             @db.Uuid
+  status       SubscriptionStatus @default(TRIAL)
+  startDate    DateTime
+  endDate      DateTime
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  restaurant   Restaurant         @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
+  plan         Plan               @relation(fields: [planId], references: [id], onDelete: Restrict)
+
+  @@index([status])
+  @@index([endDate])
+  @@map("subscriptions")
+}
+
+model User {
+  id              String           @id @default(uuid()) @db.Uuid
+  restaurantId    String           @db.Uuid
+  name            String
+  email           String
+  passwordHash    String
+  phone           String?
+  imageUrl        String?
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  restaurant      Restaurant       @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
+  employeeProfile EmployeeProfile?
+  userRoles       UserRole[]
+  userBranches    UserBranch[]
+  refreshTokens   RefreshToken[]
+
+  @@unique([restaurantId, email])
+  @@index([restaurantId])
+  @@index([isActive])
+  @@index([email])
+  @@map("users")
+}
+
+model EmployeeProfile {
+  id             String    @id @default(uuid()) @db.Uuid
+  userId         String    @unique @db.Uuid
+  identification String?
+  address        String?
+  position       String?
+  hireDate       DateTime?
+  salary         Decimal?  @db.Decimal(10, 2)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("employee_profiles")
+}
+
+model Role {
+  id              String           @id @default(uuid()) @db.Uuid
+  restaurantId    String           @db.Uuid
+  name            String
+  description     String?
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  restaurant      Restaurant       @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+  branchRoles     UserBranchRole[]
+
+  @@unique([restaurantId, name])
+  @@index([restaurantId])
+  @@index([isActive])
+  @@map("roles")
+}
+
+model Permission {
+  id              String           @id @default(uuid()) @db.Uuid
+  name            String           @unique
+  description     String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model UserRole {
+  userId     String   @db.Uuid
+  roleId     String   @db.Uuid
+  assignedAt DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@index([roleId])
+  @@map("user_roles")
+}
+
+model RolePermission {
+  roleId       String     @db.Uuid
+  permissionId String     @db.Uuid
+  assignedAt   DateTime   @default(now())
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+model UserBranch {
+  userId     String           @db.Uuid
+  branchId   String           @db.Uuid
+  isActive   Boolean          @default(true)
+  assignedAt DateTime         @default(now())
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch     Branch           @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  roles      UserBranchRole[]
+
+  @@id([userId, branchId])
+  @@index([branchId])
+  @@index([isActive])
+  @@map("user_branches")
+}
+
+model UserBranchRole {
+  userId     String     @db.Uuid
+  branchId   String     @db.Uuid
+  roleId     String     @db.Uuid
+  assignedAt DateTime   @default(now())
+  userBranch UserBranch @relation(fields: [userId, branchId], references: [userId, branchId], onDelete: Cascade)
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, branchId, roleId])
+  @@index([roleId])
+  @@index([branchId])
+  @@map("user_branch_roles")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
