@@ -6,73 +6,100 @@ import {
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom, timeout } from 'rxjs';
+import {
+  CORE_SERVICE_CLIENT,
+  MICROSERVICE_TIMEOUT,
+  OPERATIONS_SERVICE_CLIENT,
+} from './injection-tokens';
+import {
+  CORE_HEALTH_PATTERN,
+  OPERATIONS_HEALTH_PATTERN,
+  TcpHealthResponse,
+} from './service-contracts';
 
-interface ServiceHealthResponse {
-  status: 'ok';
-  service: string;
-}
+type PublicServiceStatus = 'ok' | 'unavailable';
 
-interface HealthCheckResult {
+export interface HealthCheckResult {
   status: 'ok' | 'degraded' | 'unavailable';
-  service: string;
-  dependencies: {
-    core: 'up' | 'down';
-    operations: 'up' | 'down';
+  services: {
+    apiGateway: { status: 'ok' };
+    coreService: { status: PublicServiceStatus };
+    operationsService: { status: PublicServiceStatus };
   };
+  timestamp: string;
 }
 
 @Controller()
 export class AppController {
   constructor(
-    @Inject('CORE_SERVICE') private readonly coreServiceClient: ClientProxy,
-    @Inject('OPERATIONS_SERVICE')
+    @Inject(CORE_SERVICE_CLIENT)
+    private readonly coreServiceClient: ClientProxy,
+    @Inject(OPERATIONS_SERVICE_CLIENT)
     private readonly operationsServiceClient: ClientProxy,
+    @Inject(MICROSERVICE_TIMEOUT)
+    private readonly timeoutMs: number,
   ) {}
 
   @Get('health')
   async getHealth(): Promise<HealthCheckResult> {
     const [coreStatus, operationsStatus] = await Promise.all([
-      this.checkDependency(this.coreServiceClient, 'health.core'),
-      this.checkDependency(this.operationsServiceClient, 'health.operations'),
+      this.checkDependency(
+        this.coreServiceClient,
+        CORE_HEALTH_PATTERN,
+        'core-service',
+      ),
+      this.checkDependency(
+        this.operationsServiceClient,
+        OPERATIONS_HEALTH_PATTERN,
+        'operations-service',
+      ),
     ]);
+    const unavailableCount = [coreStatus, operationsStatus].filter(
+      (status) => status === 'unavailable',
+    ).length;
+    const result: HealthCheckResult = {
+      status:
+        unavailableCount === 0
+          ? 'ok'
+          : unavailableCount === 1
+            ? 'degraded'
+            : 'unavailable',
+      services: {
+        apiGateway: { status: 'ok' },
+        coreService: { status: coreStatus },
+        operationsService: { status: operationsStatus },
+      },
+      timestamp: new Date().toISOString(),
+    };
 
-    if (coreStatus === 'down') {
-      throw new ServiceUnavailableException({
-        status: 'unavailable',
-        service: 'api-gateway',
-        dependencies: {
-          core: 'down',
-          operations: operationsStatus,
-        },
-      } satisfies HealthCheckResult);
+    if (unavailableCount > 0) {
+      throw new ServiceUnavailableException(result);
     }
 
-    const isOk = coreStatus === 'up' && operationsStatus === 'up';
-
-    return {
-      status: isOk ? 'ok' : 'degraded',
-      service: 'api-gateway',
-      dependencies: {
-        core: 'up',
-        operations: operationsStatus,
-      },
-    };
+    return result;
   }
 
   private async checkDependency(
     client: ClientProxy,
-    command: 'health.core' | 'health.operations',
-  ): Promise<'up' | 'down'> {
+    pattern: typeof CORE_HEALTH_PATTERN | typeof OPERATIONS_HEALTH_PATTERN,
+    expectedService: TcpHealthResponse['service'],
+  ): Promise<PublicServiceStatus> {
     try {
       const response = await firstValueFrom(
         client
-          .send<ServiceHealthResponse>({ cmd: command }, {})
-          .pipe(timeout(2000)),
+          .send<TcpHealthResponse>(pattern, {})
+          .pipe(timeout(this.timeoutMs)),
       );
+      const timestampIsValid = !Number.isNaN(Date.parse(response.timestamp));
 
-      return response.status === 'ok' ? 'up' : 'down';
+      return response.status === 'ok' &&
+        response.service === expectedService &&
+        response.transport === 'tcp' &&
+        timestampIsValid
+        ? 'ok'
+        : 'unavailable';
     } catch {
-      return 'down';
+      return 'unavailable';
     }
   }
 }

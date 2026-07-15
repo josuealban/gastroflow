@@ -1,21 +1,80 @@
-# HTTP Fundamentals
+# Fundamentos HTTP aplicados en GastroFlow
 
-The API Gateway is the only HTTP entry point of GastroFlow SaaS, exposing RESTful endpoints.
+## Qué es HTTP
 
-## Methods Used
+HTTP es el protocolo de aplicación usado por un cliente para enviar una solicitud (`request`) a un servidor y recibir una respuesta (`response`). En Fase 1, el navegador o Postman actúan como clientes y API Gateway es el único servidor HTTP público.
 
-- **GET**: To retrieve resources (e.g. `GET /api/v1/health`)
-- **POST**: To create new resources (e.g. `POST /api/v1/orders`)
-- **PUT**: To replace existing resources.
-- **PATCH**: To partially update resources.
-- **DELETE**: To remove resources.
+Una solicitud contiene:
 
-## Status Codes
+- método, por ejemplo `GET`;
+- URL, por ejemplo `/api/v1/health`;
+- headers, como `Accept: application/json`;
+- body opcional. Un `GET` de health no necesita body.
 
-- `200 OK`: Successful operation.
-- `201 Created`: Resource created.
-- `400 Bad Request`: Validation errors (caught by `ValidationPipe`).
-- `401 Unauthorized`: Missing or invalid JWT.
-- `403 Forbidden`: RBAC restriction.
-- `404 Not Found`: Resource doesn't exist.
-- `500 Internal Server Error`: Unhandled errors.
+Una respuesta contiene un código de estado, headers y, en este caso, un body JSON.
+
+## Versiones del protocolo
+
+- HTTP/1.1 define mensajes de texto, conexiones persistentes y el header `Host`.
+- HTTP/2 incorpora multiplexación y compresión de headers.
+- HTTP/3 transporta HTTP sobre QUIC/UDP.
+
+GastroFlow se verifica localmente con HTTP. Fase 1 no afirma configurar HTTP/2 o HTTP/3 directamente en NestJS. Un proxy inverso o una plataforma administrada podrá terminar HTTPS y negociar versiones modernas en el despliegue futuro.
+
+## HTTP frente a HTTPS
+
+HTTPS es HTTP protegido con TLS: cifra el tráfico, autentica al servidor y ayuda a detectar alteraciones. `http://localhost` es aceptable para desarrollo local. Un despliegue real deberá exponer HTTPS; esta configuración pertenece a Fase 12.
+
+## Métodos y JSON
+
+Fase 1 implementa únicamente `GET /api/v1/health`. `POST`, `PUT`, `PATCH` y `DELETE` se usarán en recursos futuros, pero todavía no existen endpoints de negocio. JSON es la representación del body de respuesta y su header es `Content-Type: application/json`.
+
+## Códigos relevantes
+
+- `200 OK`: health integral saludable.
+- `400 Bad Request`: solicitud futura rechazada por validación.
+- `404 Not Found`: ruta inexistente o sin versión.
+- `500 Internal Server Error`: fallo no controlado; no debe filtrar stack trace.
+- `503 Service Unavailable`: uno o ambos microservicios requeridos no están disponibles.
+
+## Ejemplo saludable
+
+```http
+GET /api/v1/health HTTP/1.1
+Host: localhost:3000
+Accept: application/json
+```
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+
+{
+  "status": "ok",
+  "services": {
+    "apiGateway": { "status": "ok" },
+    "coreService": { "status": "ok" },
+    "operationsService": { "status": "ok" }
+  },
+  "timestamp": "2026-07-15T00:00:00.000Z"
+}
+```
+
+## Ejemplo degradado
+
+```http
+HTTP/1.1 503 Service Unavailable
+Content-Type: application/json; charset=utf-8
+
+{
+  "status": "degraded",
+  "services": {
+    "apiGateway": { "status": "ok" },
+    "coreService": { "status": "ok" },
+    "operationsService": { "status": "unavailable" }
+  },
+  "timestamp": "2026-07-15T00:00:00.000Z"
+}
+```
+
+El Gateway transforma errores TCP y timeouts en una respuesta estable; no devuelve credenciales, URLs de base ni stack traces.

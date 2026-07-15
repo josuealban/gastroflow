@@ -1,40 +1,45 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { Test, TestingModule } from '@nestjs/testing';
+import request from 'supertest';
+import { AppModule } from '../src/app.module';
+import { HealthCheckResult } from '../src/app.controller';
+import { configureHttpApp } from '../src/configure-http-app';
+import {
+  CORE_SERVICE_CLIENT,
+  MICROSERVICE_TIMEOUT,
+  OPERATIONS_SERVICE_CLIENT,
+} from '../src/injection-tokens';
+import { TcpHealthResponse } from '../src/service-contracts';
 import { of, throwError } from 'rxjs';
-import { AppModule } from './../src/app.module';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const request = require('supertest') as (app: unknown) => {
-  get: (path: string) => {
-    expect: (status: number) => {
-      expect: (body: unknown) => Promise<void>;
-    };
-  };
-};
+const timestamp = '2026-07-15T00:00:00.000Z';
 
-describe('AppController (e2e)', () => {
+function healthResponse(
+  service: TcpHealthResponse['service'],
+): TcpHealthResponse {
+  return { service, status: 'ok', transport: 'tcp', timestamp };
+}
+
+describe('API Gateway health (e2e)', () => {
   let app: INestApplication;
-
-  const mockCoreClient = {
-    send: jest.fn().mockReturnValue(of({ status: 'ok' })),
-  };
-
-  const mockOperationsClient = {
-    send: jest.fn().mockReturnValue(of({ status: 'ok' })),
-  };
+  const mockCoreClient = { send: jest.fn() };
+  const mockOperationsClient = { send: jest.fn() };
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
-      .overrideProvider('CORE_SERVICE')
+      .overrideProvider(CORE_SERVICE_CLIENT)
       .useValue(mockCoreClient)
-      .overrideProvider('OPERATIONS_SERVICE')
+      .overrideProvider(OPERATIONS_SERVICE_CLIENT)
       .useValue(mockOperationsClient)
+      .overrideProvider(MICROSERVICE_TIMEOUT)
+      .useValue(50)
       .compile();
 
     app = moduleFixture.createNestApplication();
-    app.setGlobalPrefix('api/v1');
+    configureHttpApp(app, app.get(ConfigService));
     await app.init();
   });
 
@@ -43,55 +48,65 @@ describe('AppController (e2e)', () => {
   });
 
   beforeEach(() => {
-    mockCoreClient.send.mockReturnValue(of({ status: 'ok' }));
-    mockOperationsClient.send.mockReturnValue(of({ status: 'ok' }));
+    mockCoreClient.send.mockReturnValue(of(healthResponse('core-service')));
+    mockOperationsClient.send.mockReturnValue(
+      of(healthResponse('operations-service')),
+    );
   });
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  it('GET /api/v1/health returns ok when both services are up', async () => {
-    await request(app.getHttpServer())
+  function httpServer(): Parameters<typeof request>[0] {
+    return app.getHttpServer() as Parameters<typeof request>[0];
+  }
+
+  it('GET /api/v1/health returns 200 with a stable JSON structure', async () => {
+    const response = await request(httpServer())
       .get('/api/v1/health')
-      .expect(200)
-      .expect({
-        status: 'ok',
-        service: 'api-gateway',
-        dependencies: {
-          core: 'up',
-          operations: 'up',
-        },
-      });
+      .expect('Content-Type', /json/)
+      .expect(200);
+    const body = response.body as HealthCheckResult;
+
+    expect(body).toMatchObject({
+      status: 'ok',
+      services: {
+        apiGateway: { status: 'ok' },
+        coreService: { status: 'ok' },
+        operationsService: { status: 'ok' },
+      },
+    });
+    expect(Number.isNaN(Date.parse(body.timestamp))).toBe(false);
   });
 
-  it('GET /api/v1/health returns degraded when operations is down', async () => {
+  it('GET /api/v1/health returns controlled 503 when a service fails', async () => {
     mockOperationsClient.send.mockReturnValue(
-      throwError(() => new Error('operations unavailable')),
+      throwError(() => new Error('not exposed')),
     );
 
-    await request(app.getHttpServer())
+    const response = await request(httpServer())
       .get('/api/v1/health')
-      .expect(200)
-      .expect({
-        status: 'degraded',
-        service: 'api-gateway',
-        dependencies: { core: 'up', operations: 'down' },
-      });
+      .expect('Content-Type', /json/)
+      .expect(503);
+
+    expect(response.body).toMatchObject({
+      status: 'degraded',
+      services: { operationsService: { status: 'unavailable' } },
+    });
+    expect(JSON.stringify(response.body)).not.toContain('not exposed');
   });
 
-  it('GET /api/v1/health returns 503 when core is down', async () => {
-    mockCoreClient.send.mockReturnValue(
-      throwError(() => new Error('core unavailable')),
-    );
+  it('uses the configured CORS origin', async () => {
+    await request(httpServer())
+      .options('/api/v1/health')
+      .set('Origin', 'http://localhost:5173')
+      .set('Access-Control-Request-Method', 'GET')
+      .expect('Access-Control-Allow-Origin', 'http://localhost:5173')
+      .expect(204);
+  });
 
-    await request(app.getHttpServer())
-      .get('/api/v1/health')
-      .expect(503)
-      .expect({
-        status: 'unavailable',
-        service: 'api-gateway',
-        dependencies: { core: 'down', operations: 'up' },
-      });
+  it('does not expose unversioned health routes', async () => {
+    await request(httpServer()).get('/api/health').expect(404);
   });
 });

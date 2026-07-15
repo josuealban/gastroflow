@@ -81,12 +81,27 @@
   font-weight: 650;
 }
 
-.service-status--up {
+.service-status--ok {
   color: var(--success);
 }
 
-.service-status--down {
+.service-status--unavailable {
   color: var(--danger);
+}
+
+.error-message {
+  margin: 20px 0 0;
+  padding: 12px 14px;
+  color: var(--danger);
+  border: 1px solid color-mix(in srgb, var(--danger) 25%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--danger) 7%, transparent);
+}
+
+.last-updated {
+  margin: 18px 0 0;
+  color: var(--muted);
+  font-size: 0.88rem;
 }
 
 button {

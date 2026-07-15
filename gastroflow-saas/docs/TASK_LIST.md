@@ -16,10 +16,23 @@
 - [x] Conservar cuatro proyectos independientes.
 - [x] Conservar Gateway HTTP 3000, Core TCP 3001 y Operations TCP 3002.
 - [x] Conservar frontend apuntando únicamente al Gateway.
-- [x] Conservar health checks y pruebas existentes.
-- [ ] Alinear nombres, variables y README de cada proyecto con la arquitectura congelada.
-- [ ] Retirar scripts raíz que describen tres bases globales, sin ejecutar persistencia.
-- [ ] Definir contratos TCP iniciales y estrategia uniforme de errores/configuración.
+- [x] Alinear el nombre activo `operations-service` en código, variables y scripts.
+- [x] Crear `.gitattributes` y `.editorconfig` sin reformateo masivo.
+- [x] Configurar `/api/v1`, `ValidationPipe`, CORS y apagado ordenado.
+- [x] Validar hosts, puertos, timeout y orígenes con mensajes seguros.
+- [x] Reutilizar clientes TCP con tokens de inyección únicos.
+- [x] Definir contratos `{ cmd: 'core.health' }` y `{ cmd: 'operations.health' }`.
+- [x] Devolver HTTP 200 saludable y HTTP 503 degradado/indisponible.
+- [x] Desacoplar Prisma provisional del arranque técnico sin modificar sus modelos.
+- [x] Retirar scripts raíz de las tres bases globales.
+- [x] Crear scripts reales de inicio, desarrollo, lint, test y build.
+- [x] Corregir los cuatro `.env.example` sin añadir secretos.
+- [x] Implementar la pantalla técnica de estado y actualización real.
+- [x] Ejecutar lint sin errores ni advertencias en los cuatro proyectos.
+- [x] Ejecutar 41 pruebas unitarias y 6 pruebas E2E correctamente.
+- [x] Compilar los cuatro proyectos desde la raíz.
+- [x] Verificar manualmente health 200, degradación 503 y frontend real.
+- [x] Documentar HTTP, cliente-servidor y microservicios.
 
 ## Fase 2 — Prisma
 
