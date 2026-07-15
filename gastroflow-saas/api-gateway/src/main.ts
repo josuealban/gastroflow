@@ -1,24 +1,15 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
-import { parsePort } from './parse-port';
+import { parsePort } from './configuration';
+import { configureHttpApp } from './configure-http-app';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
+  configureHttpApp(app, configService);
 
-  app.setGlobalPrefix('api/v1');
-
-  const corsOrigin =
-    configService.get<string>('CORS_ORIGIN') ?? 'http://localhost:5173';
-  app.enableCors({
-    origin: corsOrigin,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  });
-
-  const port = parsePort(configService.get<string>('PORT'), 3000);
+  const port = parsePort(configService.get<string>('PORT'), 3000, 'PORT');
 
   await app.listen(port);
 }

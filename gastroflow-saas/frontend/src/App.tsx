@@ -2,50 +2,56 @@ import { useCallback, useEffect, useState } from 'react';
 import { apiClient } from './api/client';
 import './App.css';
 
-type ServiceStatus = 'up' | 'down';
+type ServiceStatus = 'ok' | 'unavailable';
 
 interface HealthResponse {
   status: 'ok' | 'degraded' | 'unavailable';
-  service: 'api-gateway';
-  dependencies: {
-    core: ServiceStatus;
-    audit: ServiceStatus;
+  services: {
+    apiGateway: { status: ServiceStatus };
+    coreService: { status: ServiceStatus };
+    operationsService: { status: ServiceStatus };
   };
+  timestamp: string;
 }
 
 interface ApiFailure {
-  response?: {
-    data?: HealthResponse;
-  };
+  response?: { data?: HealthResponse };
 }
 
-const unavailableHealth: HealthResponse = {
-  status: 'unavailable',
-  service: 'api-gateway',
-  dependencies: { core: 'down', audit: 'down' },
-};
-
 function App() {
-  const [health, setHealth] = useState<HealthResponse>(unavailableHealth);
-  const [gatewayStatus, setGatewayStatus] = useState<ServiceStatus>('down');
+  const [health, setHealth] = useState<HealthResponse | null>(null);
+  const [gatewayStatus, setGatewayStatus] =
+    useState<ServiceStatus>('unavailable');
   const [isChecking, setIsChecking] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const checkHealth = useCallback(async () => {
     setIsChecking(true);
+    setErrorMessage(null);
 
     try {
       const response = await apiClient.get<HealthResponse>('/health');
       setHealth(response.data);
-      setGatewayStatus('up');
+      setGatewayStatus('ok');
     } catch (error: unknown) {
       const gatewayResponse = (error as ApiFailure).response?.data;
-      setHealth(gatewayResponse ?? unavailableHealth);
-      setGatewayStatus(gatewayResponse ? 'up' : 'down');
 
-      if (import.meta.env.DEV) {
-        console.error('No fue posible completar la comprobación de salud.', error);
+      if (gatewayResponse?.services) {
+        setHealth(gatewayResponse);
+        setGatewayStatus('ok');
+        setErrorMessage(
+          'El API Gateway respondió, pero uno o más servicios internos no están disponibles.',
+        );
+      } else {
+        setHealth(null);
+        setGatewayStatus('unavailable');
+        setErrorMessage(
+          'No fue posible conectar con el API Gateway. Verifica que el backend esté iniciado.',
+        );
       }
     } finally {
+      setLastUpdated(new Date());
       setIsChecking(false);
     }
   }, []);
@@ -54,36 +60,62 @@ function App() {
     void checkHealth();
   }, [checkHealth]);
 
+  const systemStatus = health?.status ?? 'unavailable';
   const generalStatus = isChecking
-    ? 'Conectando con los servicios...'
-    : health.status === 'ok'
-      ? 'Sistema operativo'
-      : health.status === 'degraded'
-        ? 'Operación parcial'
-        : 'API principal no disponible';
+    ? 'Consultando el estado real...'
+    : systemStatus === 'ok'
+      ? 'Todos los servicios están disponibles'
+      : systemStatus === 'degraded'
+        ? 'El sistema funciona de forma degradada'
+        : 'El sistema no está disponible';
 
   return (
     <main className="status-page">
-      <section className="status-panel" aria-live="polite">
-        <p className="eyebrow">Plataforma de gestión</p>
+      <section
+        className="status-panel"
+        aria-live="polite"
+        aria-busy={isChecking}
+      >
+        <p className="eyebrow">Estado técnico</p>
         <h1>GastroFlow</h1>
-        <p className="description">
-          Plataforma SaaS de gestión para restaurantes
-        </p>
+        <p className="description">MVP académico con visión de titulación</p>
 
-        <div className={`summary summary--${health.status}`}>
+        <div className={`summary summary--${systemStatus}`}>
           <span className="summary__indicator" aria-hidden="true" />
           <strong>{generalStatus}</strong>
         </div>
 
         <dl className="services">
-          <ServiceRow label="Gateway" status={gatewayStatus} />
-          <ServiceRow label="Core" status={health.dependencies.core} />
-          <ServiceRow label="Audit" status={health.dependencies.audit} />
+          <ServiceRow label="API Gateway" status={gatewayStatus} />
+          <ServiceRow
+            label="Core Service"
+            status={health?.services.coreService.status ?? 'unavailable'}
+          />
+          <ServiceRow
+            label="Operations Service"
+            status={health?.services.operationsService.status ?? 'unavailable'}
+          />
         </dl>
 
-        <button type="button" onClick={() => void checkHealth()} disabled={isChecking}>
-          Comprobar nuevamente
+        {errorMessage ? <p className="error-message">{errorMessage}</p> : null}
+
+        <p className="last-updated">
+          Última actualización:{' '}
+          {lastUpdated
+            ? lastUpdated.toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+              })
+            : 'pendiente'}
+        </p>
+
+        <button
+          type="button"
+          onClick={() => void checkHealth()}
+          disabled={isChecking}
+        >
+          {isChecking ? 'Actualizando...' : 'Actualizar estado'}
         </button>
       </section>
     </main>
@@ -95,7 +127,7 @@ function ServiceRow({ label, status }: { label: string; status: ServiceStatus })
     <div className="service-row">
       <dt>{label}</dt>
       <dd className={`service-status service-status--${status}`}>
-        {status === 'up' ? 'Disponible' : 'No disponible'}
+        {status === 'ok' ? 'Disponible' : 'No disponible'}
       </dd>
     </div>
   );

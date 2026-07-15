@@ -1,24 +1,24 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from './app.controller';
 
-describe('AppController', () => {
+describe('Operations AppController', () => {
   let appController: AppController;
 
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
       controllers: [AppController],
-      providers: [],
     }).compile();
-
-    appController = app.get<AppController>(AppController);
+    appController = app.get(AppController);
   });
 
-  describe('getHealth', () => {
-    it('should return health status', () => {
-      expect(appController.getHealth()).toEqual({
-        status: 'ok',
-        service: 'operations-service',
-      });
+  it('returns the documented TCP health response', () => {
+    const result = appController.getHealth();
+
+    expect(result).toMatchObject({
+      service: 'operations-service',
+      status: 'ok',
+      transport: 'tcp',
     });
+    expect(Number.isNaN(Date.parse(result.timestamp))).toBe(false);
   });
 });

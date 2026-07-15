@@ -1,28 +1,22 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from '../src/app.controller';
 
-/**
- * core-service es un microservicio TCP, no una aplicación HTTP.
- * Las pruebas e2e validan el comportamiento del controlador de mensajes
- * directamente sin levantar un servidor TCP real.
- */
-describe('CoreService (e2e)', () => {
+describe('Core TCP health contract (e2e)', () => {
   let appController: AppController;
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       controllers: [AppController],
-      providers: [],
     }).compile();
-
-    appController = moduleFixture.get<AppController>(AppController);
+    appController = moduleFixture.get(AppController);
   });
 
-  it('health.core should return ok', () => {
+  it('core.health returns a valid service response without PostgreSQL', () => {
     const result = appController.getHealth();
-    expect(result).toEqual({
-      status: 'ok',
-      service: 'core-service',
-    });
+
+    expect(result.service).toBe('core-service');
+    expect(result.status).toBe('ok');
+    expect(result.transport).toBe('tcp');
+    expect(Number.isNaN(Date.parse(result.timestamp))).toBe(false);
   });
 });

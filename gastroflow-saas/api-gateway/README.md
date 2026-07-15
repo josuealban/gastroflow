@@ -1,19 +1,23 @@
 # API Gateway
 
-Entrada HTTP de GastroFlow en `127.0.0.1:3000`, con prefijo `/api/v1`. El frontend y Postman sólo deben comunicarse con este proyecto.
+Servidor HTTP público de GastroFlow en el puerto 3000. Expone `GET /api/v1/health`, usa CORS y timeout configurables, `ValidationPipe`, versionamiento URI y apagado ordenado.
 
-El health check consulta por TCP:
+Mantiene dos clientes TCP reutilizables:
 
-- `{ cmd: 'health.core' }` en Core.
-- `{ cmd: 'health.operations' }` en Operations.
+- `{ cmd: 'core.health' }` hacia Core Service.
+- `{ cmd: 'operations.health' }` hacia Operations Service.
 
-```env
-PORT=3000
-CORE_SERVICE_HOST=127.0.0.1
-CORE_SERVICE_PORT=3001
-OPERATIONS_SERVICE_HOST=127.0.0.1
-OPERATIONS_SERVICE_PORT=3002
-CORS_ORIGIN=http://localhost:5173
+Devuelve HTTP 200 cuando ambos responden y HTTP 503 con `degraded` o `unavailable` cuando falla uno o ambos. No expone errores internos.
+
+Variables: `PORT`, `CORS_ORIGIN`, `CORE_SERVICE_HOST`, `CORE_SERVICE_PORT`, `OPERATIONS_SERVICE_HOST`, `OPERATIONS_SERVICE_PORT` y `MICROSERVICE_TIMEOUT_MS`.
+
+```bash
+npm install
+npm run start:dev
+npm run lint
+npm run test
+npm run test:e2e
+npm run build
 ```
 
-API Gateway no instala ni importa Prisma. Los DTO, validaciones y endpoints funcionales se incorporarán en fases posteriores.
+API Gateway no instala ni importa Prisma y no se conecta a PostgreSQL.

@@ -1,17 +1,16 @@
 # Core Service
 
-Microservicio TCP en `127.0.0.1:3001`. Responde `{ cmd: 'health.core' }` y administra dos dominios PostgreSQL:
+Microservicio NestJS TCP en `127.0.0.1:3001`. En Fase 1 responde al patrón `{ cmd: 'core.health' }` con nombre de servicio, estado, transporte y timestamp ISO-8601.
 
-- `gastroflow_personal` mediante `personal-client`.
-- `gastroflow_clientes` mediante `customers-client`.
+Variables de arranque: `CORE_SERVICE_HOST` y `CORE_SERVICE_PORT`. Host y puerto se validan y el proceso activa apagado ordenado. No expone HTTP.
 
-```env
-CORE_SERVICE_HOST=127.0.0.1
-CORE_SERVICE_PORT=3001
-PERSONAL_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/gastroflow_personal?schema=public
-CUSTOMERS_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/gastroflow_clientes?schema=public
+```bash
+npm install
+npm run start:dev
+npm run lint
+npm run test
+npm run test:e2e
+npm run build
 ```
 
-Los modelos incluyen restaurantes, planes, suscripciones, usuarios, empleados, roles, permisos, clientes y reservaciones. Las consultas funcionales futuras deberán filtrar siempre por `restaurantId` derivado de la autenticación.
-
-Login, JWT, refresh tokens funcionales, Guards y CRUD todavía no están implementados.
+Los módulos Prisma de personal/clientes y sus variables permanecen como legado provisional, pero no se importan en `AppModule` ni se conectan durante health. Serán reemplazados por `gastroflow_control` en Fase 2.

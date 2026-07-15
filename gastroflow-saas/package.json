@@ -3,19 +3,27 @@
   "version": "1.0.0",
   "description": "GastroFlow SaaS Root",
   "scripts": {
-    "db:up": "docker compose up -d --wait postgres",
-    "db:down": "docker compose down",
-    "db:logs": "docker compose logs -f postgres",
-    "db:reset": "docker compose down -v && docker compose up -d --wait postgres",
-    "verify:tenant-isolation": "cd operations-service && npm run verify:tenant-isolation",
-    "start:all": "concurrently \"npm run start:api\" \"npm run start:core\" \"npm run start:operations\" \"npm run start:frontend\"",
-    "start:api": "cd api-gateway && npm run start:dev",
-    "start:core": "cd core-service && npm run start:dev",
-    "start:operations": "cd operations-service && npm run start:dev",
-    "start:frontend": "cd frontend && npm run dev",
-    "build:all": "cd api-gateway && npm run build && cd ../core-service && npm run build && cd ../operations-service && npm run build && cd ../frontend && npm run build"
+    "start:gateway": "npm --prefix api-gateway run start:dev",
+    "start:core": "npm --prefix core-service run start:dev",
+    "start:operations": "npm --prefix operations-service run start:dev",
+    "start:frontend": "npm --prefix frontend run dev",
+    "dev": "concurrently -k -n gateway,core,operations,frontend -c blue,green,magenta,cyan \"npm run start:gateway\" \"npm run start:core\" \"npm run start:operations\" \"npm run start:frontend\"",
+    "build:gateway": "npm --prefix api-gateway run build",
+    "build:core": "npm --prefix core-service run build",
+    "build:operations": "npm --prefix operations-service run build",
+    "build:frontend": "npm --prefix frontend run build",
+    "build": "npm run build:gateway && npm run build:core && npm run build:operations && npm run build:frontend",
+    "lint:gateway": "npm --prefix api-gateway run lint",
+    "lint:core": "npm --prefix core-service run lint",
+    "lint:operations": "npm --prefix operations-service run lint",
+    "lint:frontend": "npm --prefix frontend run lint",
+    "lint": "npm run lint:gateway && npm run lint:core && npm run lint:operations && npm run lint:frontend",
+    "test:gateway": "npm --prefix api-gateway run test -- --runInBand",
+    "test:core": "npm --prefix core-service run test -- --runInBand",
+    "test:operations": "npm --prefix operations-service run test -- --runInBand",
+    "test": "npm run test:gateway && npm run test:core && npm run test:operations"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^10.0.3"
   }
 }

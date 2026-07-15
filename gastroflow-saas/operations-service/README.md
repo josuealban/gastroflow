@@ -1,13 +1,16 @@
 # Operations Service
 
-Microservicio TCP en `127.0.0.1:3002`. Responde `{ cmd: 'health.operations' }` y administra exclusivamente `gastroflow_operaciones` mediante `operations-client`.
+Microservicio NestJS TCP en `127.0.0.1:3002`. En Fase 1 responde al patrón `{ cmd: 'operations.health' }` con nombre `operations-service`, estado, transporte y timestamp ISO-8601.
 
-```env
-OPERATIONS_SERVICE_HOST=127.0.0.1
-OPERATIONS_SERVICE_PORT=3002
-OPERATIONS_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/gastroflow_operaciones?schema=public
+Variables de arranque: `OPERATIONS_SERVICE_HOST` y `OPERATIONS_SERVICE_PORT`. Host y puerto se validan y el proceso activa apagado ordenado. No expone HTTP ni selecciona todavía bases por sucursal.
+
+```bash
+npm install
+npm run start:dev
+npm run lint
+npm run test
+npm run test:e2e
+npm run build
 ```
 
-El schema prepara categorías, platos, mesas, pedidos, pagos, configuración tributaria académica, comprobantes internos, inventario, proveedores y compras. Todos los registros de negocio incluyen `restaurantId`.
-
-`npm run verify:tenant-isolation` comprueba el aislamiento junto con las bases administradas por Core. Pagos funcionales, PDF e integración tributaria no están implementados.
+El módulo Prisma operacional y su variable de conexión permanecen como legado provisional, pero no se importan en `AppModule` ni se conectan durante health. Fase 2 los reemplazará por el schema operacional por sucursal.

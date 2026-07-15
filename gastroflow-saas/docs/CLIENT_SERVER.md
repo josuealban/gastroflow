@@ -1,36 +1,33 @@
-# Arquitectura Cliente-Servidor — GastroFlow SaaS
+# Arquitectura cliente-servidor
 
-Este documento describe la base del modelo cliente-servidor aplicado en GastroFlow.
+## Participantes
 
-## Modelo Conceptual
+- Frontend React: cliente web en `http://localhost:5173`.
+- Postman: cliente técnico para probar la API.
+- API Gateway: servidor HTTP público en `http://localhost:3000`.
+- Core Service: servidor TCP interno en `127.0.0.1:3001`.
+- Operations Service: servidor TCP interno en `127.0.0.1:3002`.
 
-El modelo cliente-servidor consiste en dos partes que se comunican mediante una red:
+El frontend nunca llama directamente a Core u Operations y ninguno de esos servicios expone HTTP en Fase 1.
 
-1. **Cliente**: El iniciador de la petición (request). Solicita recursos o servicios.
-2. **Servidor**: El proveedor del servicio. Procesa la petición y devuelve una respuesta (response).
+## Ciclo request-response
 
+```mermaid
+sequenceDiagram
+  participant F as Frontend o Postman
+  participant G as API Gateway HTTP
+  participant C as Core TCP
+  participant O as Operations TCP
+  F->>G: GET /api/v1/health
+  par Comprobaciones con timeout
+    G->>C: { cmd: "core.health" }
+    C-->>G: estado TCP
+    G->>O: { cmd: "operations.health" }
+    O-->>G: estado TCP
+  end
+  G-->>F: JSON + HTTP 200 o 503
 ```
-┌─────────┐                Request (HTTP)               ┌─────────┐
-│ Cliente │ ──────────────────────────────────────────▶ │Servidor │
-│ (React) │ ◀────────────────────────────────────────── │(Gateway)│
-└─────────┘                Response (JSON)              └─────────┘
-```
 
-## Implementación en GastroFlow
+El cliente crea un request con método, URL y headers. El Gateway consulta en paralelo a los dos servidores internos, compone el body JSON y devuelve un response. Si un servicio no contesta antes de `MICROSERVICE_TIMEOUT_MS`, lo marca `unavailable` sin exponer el error interno.
 
-### El Cliente (React)
-
-- Corre en el navegador del usuario en el puerto `5173`.
-- Inicia el flujo enviando peticiones usando el cliente Axios (`apiClient`).
-- Ejemplos de peticiones:
-  - `GET /api/v1/health` para consultar el estado del sistema.
-- Es responsable de mostrar una interfaz amigable (UI) y manejar los mensajes de error sin exponer detalles internos al usuario.
-
-### El Servidor HTTP (api-gateway)
-
-- Corre en NestJS en el puerto `3000`.
-- Es la única puerta de entrada HTTP expuesta para el cliente.
-- Recibe peticiones HTTP y traduce las consultas actuales a mensajes TCP para los microservicios correspondientes.
-- Devuelve las respuestas en formato **JSON** estructurado con códigos de estado HTTP semánticos (ej: `200 OK`, `503 Service Unavailable`).
-
-En esta fase sólo está disponible el endpoint de salud. La autenticación, autorización y los módulos de negocio pertenecen a fases posteriores.
+La pantalla técnica no usa estados simulados cuando el Gateway responde. Si recibe un 503, muestra los estados reales del body; si no logra conectar con el Gateway, presenta un mensaje de red entendible.

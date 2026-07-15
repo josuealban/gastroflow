@@ -45,7 +45,9 @@ Presenta una sola aplicación para todos los restaurantes. Tras iniciar sesión 
 
 ## Estado observado
 
-La comunicación HTTP/TCP y los health checks existen. La persistencia del árbol de trabajo no coincide: usa bases globales `gastroflow_personal`, `gastroflow_clientes` y `gastroflow_operaciones`, más filtros `restaurantId`. Debe rediseñarse en Fase 2.
+Fase 1 deja operativa la comunicación HTTP/TCP y los health checks sin PostgreSQL. API Gateway usa `/api/v1`, CORS y timeout configurables; Core y Operations arrancan como microservicios TCP con apagado ordenado. Los módulos Prisma provisionales permanecen en el repositorio, pero fueron desacoplados del `AppModule` técnico para no exigir una conexión durante health.
+
+La persistencia provisional todavía no coincide con la arquitectura congelada: usa bases globales `gastroflow_personal`, `gastroflow_clientes` y `gastroflow_operaciones`, más filtros `restaurantId`. Se reemplazará de forma revisada en Fase 2 y no se ejecutó durante Fase 1.
 
 ## Restricciones arquitectónicas
 
