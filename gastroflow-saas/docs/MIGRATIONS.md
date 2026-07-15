@@ -1,13 +1,10 @@
 # Estrategia de migraciones
 
-## Objetivo
+## Migraciones
 
-Mantener dos historiales conceptuales:
+Fase 2 definió un schema central (`gastroflow_control`) y un schema operacional canónico aplicado a cada base de sucursal. Las migraciones fueron aplicadas a Principal y Norte. `branches:migrate-all` obtiene sucursales activas mediante Core, continúa ante fallos y presenta un resumen sanitizado. `migrate dev` queda reservado al desarrollo y `migrate deploy` distribuye cambios.
 
-- schema central para `gastroflow_control`;
-- schema operacional canónico, desplegado en cada base de sucursal.
-
-La creación de una sucursal debe aplicar todas las migraciones operacionales antes de copiar catálogos. Las actualizaciones deberán descubrir sucursales activas, verificar versión, aplicar cambios con reintentos controlados y registrar resultados sin secretos.
+Un orquestador completo (descubrimiento de sucursales, reintentos, telemetría y estrategia de respaldo) pertenece a Fase 4.
 
 ## Seguridad operacional
 

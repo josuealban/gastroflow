@@ -28,7 +28,7 @@ Operations necesitará un resolvedor con estas propiedades:
 5. cierra conexiones en apagado y ante invalidación;
 6. nunca escribe secretos en logs o respuestas.
 
-La caché y el cifrado se diseñarán después de decidir el proveedor de secretos y el modelo de amenazas.
+La caché y el cifrado están implementados en Fase 2: `DatabaseCredentialsEncryptionService` (AES-256-GCM) en Core y `BranchConnectionCacheService` en Operations.
 
 ## Migraciones
 
@@ -37,8 +37,6 @@ Fase 2 deberá definir un schema central y un schema operacional canónico. Un o
 ## Datos de plantilla
 
 La creación de una base no restaura un respaldo completo. Aplica schema limpio, copia catálogos permitidos y crea configuración inicial. Esta separación evita duplicar PII, comprobantes, movimientos y eventos.
-
-## Legado detectado
 
 ## Estado implementado en Fase 2
 
