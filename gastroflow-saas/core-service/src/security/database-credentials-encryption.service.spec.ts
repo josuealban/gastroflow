@@ -28,7 +28,9 @@ describe('DatabaseCredentialsEncryptionService', () => {
   it('detects a modified payload without exposing the plaintext', () => {
     const service = create();
     const payload = service.encrypt('never-print-this');
-    const modified = `${payload.slice(0, -1)}${payload.endsWith('A') ? 'B' : 'A'}`;
+    const parts = payload.split('.');
+    parts[3] = (parts[3].startsWith('A') ? 'B' : 'A') + parts[3].slice(1);
+    const modified = parts.join('.');
     expect(() => service.decrypt(modified)).toThrow('failed authentication');
     try {
       service.decrypt(modified);

@@ -11,5 +11,6 @@ import { BranchConnectionResolverService } from './branch-connection-resolver.se
     BranchConnectionResolverService,
     DatabaseCredentialsEncryptionService,
   ],
+  exports: [BranchConnectionResolverService],
 })
 export class BranchConnectionModule {}
