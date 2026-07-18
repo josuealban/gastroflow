@@ -24,6 +24,7 @@ enum SubscriptionStatus {
 
 model Restaurant {
   id           String        @id @default(uuid()) @db.Uuid
+  slug         String        @unique
   name         String
   legalName    String?
   taxId        String?
@@ -245,6 +246,7 @@ model RefreshToken {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@unique([tokenHash])
   @@index([expiresAt])
   @@map("refresh_tokens")
 }

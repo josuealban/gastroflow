@@ -31,3 +31,6 @@ sequenceDiagram
 El cliente crea un request con método, URL y headers. El Gateway consulta en paralelo a los dos servidores internos, compone el body JSON y devuelve un response. Si un servicio no contesta antes de `MICROSERVICE_TIMEOUT_MS`, lo marca `unavailable` sin exponer el error interno.
 
 La pantalla técnica no usa estados simulados cuando el Gateway responde. Si recibe un 503, muestra los estados reales del body; si no logra conectar con el Gateway, presenta un mensaje de red entendible.
+# Sesiones HTTP
+
+El cliente envía Access Token como Bearer y `credentials: include` para la cookie HttpOnly. Ante 401 puede intentar un solo refresh y repetir una vez; nunca recibe ni persiste el Refresh Token.

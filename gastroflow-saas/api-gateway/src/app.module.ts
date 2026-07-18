@@ -8,12 +8,19 @@ import {
   MICROSERVICE_TIMEOUT,
   OPERATIONS_SERVICE_CLIENT,
 } from './injection-tokens';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { AuthModule } from './auth/auth.module';
+import { JwtAuthGuard, PermissionsGuard, RolesGuard } from './auth/auth.guards';
+import { AuthController } from './auth/auth.controller';
+import { AuthService } from './auth/auth.service';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 5 }]),
     ClientsModule.registerAsync([
       {
         name: CORE_SERVICE_CLIENT,
@@ -58,9 +65,15 @@ import {
         },
       },
     ]),
+    AuthModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, AuthController],
   providers: [
+    AuthService,
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: RolesGuard },
+    { provide: APP_GUARD, useClass: PermissionsGuard },
     {
       provide: MICROSERVICE_TIMEOUT,
       inject: [ConfigService],

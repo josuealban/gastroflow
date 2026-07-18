@@ -81,9 +81,18 @@ const users = [
 ] as const;
 
 async function main(): Promise<void> {
+  if (
+    process.env.NODE_ENV === 'production' &&
+    process.env.ALLOW_DEMO_SEED !== 'true'
+  ) {
+    throw new Error('Demo seed is disabled in production');
+  }
+  const demoPassword = process.env.DEMO_USER_PASSWORD;
+  if (!demoPassword) throw new Error('DEMO_USER_PASSWORD is required');
   const basic = await prisma.plan.upsert({
     where: { name: 'Plan Básico' },
     update: {
+      slug: 'restaurante-demo',
       price: 29,
       maxBranches: 1,
       maxUsersPerBranch: 5,
@@ -132,6 +141,7 @@ async function main(): Promise<void> {
     },
     create: {
       id: RESTAURANT_ID,
+      slug: 'restaurante-demo',
       name: 'Restaurante Demo',
       legalName: 'Restaurante Demo S.A.',
       taxId: '0999999999001',
@@ -304,10 +314,7 @@ async function main(): Promise<void> {
     }
   }
 
-  const passwordHash = await bcrypt.hash(
-    process.env.DEMO_USER_PASSWORD ?? 'Demo123!',
-    12,
-  );
+  const passwordHash = await bcrypt.hash(demoPassword, 12);
   for (const data of users) {
     const user = await prisma.user.upsert({
       where: {

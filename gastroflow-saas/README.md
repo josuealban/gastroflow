@@ -139,3 +139,6 @@ HTTP 200 si todos los servicios responden. HTTP 503 con estado `degraded` o `una
 - [Informe de Parte 0](docs/PHASE_0_REPORT.md)
 - [Informe de Fase 1](docs/PHASE_1_REPORT.md)
 - [Informe de Fase 2](docs/PHASE_2_REPORT.md)
+# Fase 3: autenticación y RBAC
+
+El flujo `Frontend → API Gateway HTTP → Core Service TCP → gastroflow_control` implementa login multirrestaurante, JWT de acceso, refresh rotatorio en cookie HttpOnly, selección segura de sucursal y RBAC. Consulte [docs/AUTHENTICATION.md](docs/AUTHENTICATION.md). Operations Service no participa en autenticación.

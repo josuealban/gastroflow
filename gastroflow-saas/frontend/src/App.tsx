@@ -1,136 +1,23 @@
-import { useCallback, useEffect, useState } from 'react';
-import { apiClient } from './api/client';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
+import { AuthProvider, useAuth } from './auth/AuthContext';
 import './App.css';
 
-type ServiceStatus = 'ok' | 'unavailable';
-
-interface HealthResponse {
-  status: 'ok' | 'degraded' | 'unavailable';
-  services: {
-    apiGateway: { status: ServiceStatus };
-    coreService: { status: ServiceStatus };
-    operationsService: { status: ServiceStatus };
-  };
-  timestamp: string;
-}
-
-interface ApiFailure {
-  response?: { data?: HealthResponse };
-}
-
-function App() {
-  const [health, setHealth] = useState<HealthResponse | null>(null);
-  const [gatewayStatus, setGatewayStatus] =
-    useState<ServiceStatus>('unavailable');
-  const [isChecking, setIsChecking] = useState(true);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  const checkHealth = useCallback(async () => {
-    setIsChecking(true);
-    setErrorMessage(null);
-
-    try {
-      const response = await apiClient.get<HealthResponse>('/health');
-      setHealth(response.data);
-      setGatewayStatus('ok');
-    } catch (error: unknown) {
-      const gatewayResponse = (error as ApiFailure).response?.data;
-
-      if (gatewayResponse?.services) {
-        setHealth(gatewayResponse);
-        setGatewayStatus('ok');
-        setErrorMessage(
-          'El API Gateway respondió, pero uno o más servicios internos no están disponibles.',
-        );
-      } else {
-        setHealth(null);
-        setGatewayStatus('unavailable');
-        setErrorMessage(
-          'No fue posible conectar con el API Gateway. Verifica que el backend esté iniciado.',
-        );
-      }
-    } finally {
-      setLastUpdated(new Date());
-      setIsChecking(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void checkHealth();
-  }, [checkHealth]);
-
-  const systemStatus = health?.status ?? 'unavailable';
-  const generalStatus = isChecking
-    ? 'Consultando el estado real...'
-    : systemStatus === 'ok'
-      ? 'Todos los servicios están disponibles'
-      : systemStatus === 'degraded'
-        ? 'El sistema funciona de forma degradada'
-        : 'El sistema no está disponible';
-
-  return (
-    <main className="status-page">
-      <section
-        className="status-panel"
-        aria-live="polite"
-        aria-busy={isChecking}
-      >
-        <p className="eyebrow">Estado técnico</p>
-        <h1>GastroFlow</h1>
-        <p className="description">MVP académico con visión de titulación</p>
-
-        <div className={`summary summary--${systemStatus}`}>
-          <span className="summary__indicator" aria-hidden="true" />
-          <strong>{generalStatus}</strong>
-        </div>
-
-        <dl className="services">
-          <ServiceRow label="API Gateway" status={gatewayStatus} />
-          <ServiceRow
-            label="Core Service"
-            status={health?.services.coreService.status ?? 'unavailable'}
-          />
-          <ServiceRow
-            label="Operations Service"
-            status={health?.services.operationsService.status ?? 'unavailable'}
-          />
-        </dl>
-
-        {errorMessage ? <p className="error-message">{errorMessage}</p> : null}
-
-        <p className="last-updated">
-          Última actualización:{' '}
-          {lastUpdated
-            ? lastUpdated.toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-              })
-            : 'pendiente'}
-        </p>
-
-        <button
-          type="button"
-          onClick={() => void checkHealth()}
-          disabled={isChecking}
-        >
-          {isChecking ? 'Actualizando...' : 'Actualizar estado'}
-        </button>
-      </section>
-    </main>
+function Content() {
+  const auth = useAuth();
+  const [error, setError] = useState('');
+  if (!auth.ready) return <main className="status-page"><section className="status-panel">Restaurando sesión…</section></main>;
+  if (!auth.user) return <Login error={error} onSubmit={async (value) => { setError(''); try { await auth.login(value); } catch { setError('Credenciales inválidas o servicio no disponible'); } }} />;
+  if (!auth.user.branchId && auth.branches.length > 0) return (
+    <main className="status-page"><section className="status-panel"><p className="eyebrow">Selecciona una sucursal</p><h1>GastroFlow</h1><div className="branch-grid">{auth.branches.map((branch) => <button className="branch-card" key={branch.id} onClick={() => void auth.selectBranch(branch.id)}><strong>{branch.name}</strong><span>{branch.code} · {branch.city ?? 'Sin ciudad'}</span><span>{branch.isPrimary ? 'Principal' : 'Sucursal'} · {branch.roles.join(', ')}</span></button>)}</div><button onClick={() => void auth.logout()}>Cerrar sesión</button></section></main>
   );
+  const activeBranch = auth.branches.find((branch) => branch.id === auth.user?.branchId);
+  return <main className="status-page"><section className="status-panel"><p className="eyebrow">Sesión activa</p><h1>{auth.user.name}</h1><p>{auth.user.email}</p><dl className="services"><div className="service-row"><dt>Restaurante</dt><dd>{auth.user.restaurantName}</dd></div><div className="service-row"><dt>Sucursal</dt><dd>{activeBranch?.name ?? 'Sin asignar'}</dd></div><div className="service-row"><dt>Roles</dt><dd>{auth.user.roles.join(', ') || 'Ninguno'}</dd></div><div className="service-row"><dt>Permisos</dt><dd>{auth.user.permissions.join(', ') || 'Ninguno'}</dd></div><div className="service-row"><dt>Gateway</dt><dd className="service-status--ok">Disponible</dd></div></dl>{auth.branches.length > 1 && <button onClick={auth.changeBranch}>Cambiar sucursal</button>} <button onClick={() => void auth.logout()}>Cerrar sesión</button></section></main>;
 }
 
-function ServiceRow({ label, status }: { label: string; status: ServiceStatus }) {
-  return (
-    <div className="service-row">
-      <dt>{label}</dt>
-      <dd className={`service-status service-status--${status}`}>
-        {status === 'ok' ? 'Disponible' : 'No disponible'}
-      </dd>
-    </div>
-  );
+function Login({ onSubmit, error }: { onSubmit: (value: { restaurantSlug: string; email: string; password: string }) => Promise<void>; error: string }) {
+  const [busy, setBusy] = useState(false);
+  async function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); setBusy(true); const form = new FormData(event.currentTarget); try { await onSubmit({ restaurantSlug: String(form.get('restaurantSlug')), email: String(form.get('email')), password: String(form.get('password')) }); } finally { setBusy(false); } }
+  return <main className="status-page"><form className="status-panel auth-form" onSubmit={(event) => void submit(event)}><p className="eyebrow">Acceso seguro</p><h1>GastroFlow</h1><label>Código del restaurante<input name="restaurantSlug" defaultValue="restaurante-demo" required pattern="[a-zA-Z0-9-]{3,60}" /></label><label>Correo<input name="email" type="email" required /></label><label>Contraseña<input name="password" type="password" required /></label>{error && <p className="error-message">{error}</p>}<button disabled={busy}>{busy ? 'Ingresando…' : 'Iniciar sesión'}</button></form></main>;
 }
-
-export default App;
+export default function App() { return <AuthProvider><Content /></AuthProvider>; }

@@ -27,6 +27,9 @@ describe('API Gateway health (e2e)', () => {
   const mockOperationsClient = { send: jest.fn() };
 
   beforeAll(async () => {
+    process.env.JWT_ACCESS_SECRET =
+      'e2e-access-secret-only-for-automated-tests';
+    process.env.INTERNAL_SERVICE_TOKEN = 'e2e-internal-token-only-for-tests';
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })

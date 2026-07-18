@@ -95,3 +95,6 @@ Esta especificación reemplaza arquitecturas anteriores. El código Prisma actua
 23. El proyecto debe poder evolucionar a titulación.
 
 Estas decisiones no se cambiarán sin una orden explícita del usuario.
+# Estado de Fase 3
+
+La identidad se resuelve mediante `restaurantSlug + email + password`. La autoridad de roles, permisos y sucursales es exclusivamente `gastroflow_control`; Gateway valida Access Tokens con Passport y nunca consulta Prisma.

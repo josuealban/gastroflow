@@ -5,11 +5,13 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { parseCorsOrigins } from './configuration';
+import cookieParser from 'cookie-parser';
 
 export function configureHttpApp(
   app: INestApplication,
   configService: ConfigService,
 ): void {
+  app.use(cookieParser());
   app.setGlobalPrefix('api');
   app.enableVersioning({
     type: VersioningType.URI,

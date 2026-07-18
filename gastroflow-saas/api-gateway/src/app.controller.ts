@@ -16,6 +16,7 @@ import {
   OPERATIONS_HEALTH_PATTERN,
   TcpHealthResponse,
 } from './service-contracts';
+import { Public } from './auth/public.decorator';
 
 type PublicServiceStatus = 'ok' | 'unavailable';
 
@@ -41,6 +42,7 @@ export class AppController {
   ) {}
 
   @Get('health')
+  @Public()
   async getHealth(): Promise<HealthCheckResult> {
     const [coreStatus, operationsStatus] = await Promise.all([
       this.checkDependency(

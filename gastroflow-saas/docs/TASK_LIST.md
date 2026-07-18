@@ -156,3 +156,11 @@
 - [ ] Implementar reportes y vistas SQL adicionales justificadas.
 - [ ] Configurar HTTPS, secretos, backups, observabilidad y CI/CD.
 - [ ] Validar usabilidad con usuarios y documentar resultados.
+# Fase 3
+
+- [x] Login multirrestaurante y bcrypt
+- [x] Access/Refresh JWT, rotación, revocación y logout
+- [x] JwtStrategy, JwtAuthGuard, CurrentUser, Roles y Permissions
+- [x] Selección segura de sucursal y respuestas 401/403
+- [x] Postman y frontend mínimo de login/selección
+- [ ] Registro público, CRUD administrativo y módulos comerciales

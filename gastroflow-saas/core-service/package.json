@@ -25,6 +25,7 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "test:integration": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./test/jest-integration.json --runInBand"
+    ,"auth:test": "jest auth --runInBand"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

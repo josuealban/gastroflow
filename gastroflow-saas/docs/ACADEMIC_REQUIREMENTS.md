@@ -82,3 +82,12 @@ Fase 2 verificó Prisma definitivo con PostgreSQL real, dos bases físicas, migr
 ## Criterio de avance
 
 Un requisito sólo avanzará de `DOCUMENTED` cuando el código pertenezca a la arquitectura vigente. `TESTED` exige una prueba ejecutable y `EVIDENCED` exige además un artefacto académico reproducible.
+# Matriz Fase 3
+
+| Requisito | Estado |
+|---|---|
+| JWT, Passport, bcrypt, DTO y ValidationPipe | TESTED |
+| Guards, CurrentUser, roles, permisos, 401 y 403 | TESTED |
+| Refresh Token, rotación y revocación | IMPLEMENTED |
+| Evidencia visual/manual | PENDING |
+| Registro público | PENDING |

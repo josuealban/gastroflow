@@ -63,3 +63,6 @@ Completar Postman, reportes adicionales, pruebas de seguridad/rendimiento, obser
 ---
 
 Cada fase exige criterios de aceptación verificables y evidencia registrada antes de marcar tareas como completadas.
+# Fase 3 — autenticación y autorización
+
+Implementada en código: login, sesión rotatoria, Passport, RBAC y selección segura de sucursal. La finalización queda sujeta a la validación automatizada e integración documentada en `PHASE_3_REPORT.md`. Fase 4 no se inicia automáticamente.

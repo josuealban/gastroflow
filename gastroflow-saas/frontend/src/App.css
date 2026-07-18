@@ -16,6 +16,12 @@
   box-shadow: var(--shadow);
 }
 
+.auth-form { display: grid; gap: 1rem; }
+.auth-form label { display: grid; gap: .4rem; text-align: left; font-weight: 600; }
+.auth-form input { padding: .8rem; border: 1px solid #cbd5e1; border-radius: .6rem; font: inherit; }
+.branch-grid { display: grid; gap: .8rem; margin: 1rem 0; }
+.branch-card { display: grid; gap: .35rem; text-align: left; }
+
 .eyebrow {
   color: var(--accent);
   font-size: 0.78rem;

@@ -16,3 +16,6 @@ El `branchId` del token es contexto autorizado, no un filtro que el frontend pue
 ## Estado
 
 `DOCUMENTED`. Login, JWT, Passport, refresh tokens, Guards y RBAC funcional no están implementados bajo esta arquitectura. El modelo actual por `restaurantId` se rediseñará en Fases 2 y 3.
+# Aplicación en Fase 3
+
+Los guards calculan autoridad desde `UserRole`, `UserBranchRole` y `RolePermission`. `settings.manage` protege los listados administrativos: OWNER está autorizado y WAITER recibe 403.
