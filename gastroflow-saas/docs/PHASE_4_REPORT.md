@@ -43,3 +43,16 @@ La integración PostgreSQL real y el recorrido health/manual están **NO EJECUTA
 ## 11. Riesgos y seguridad
 
 El principal riesgo pendiente es probar compensación de DDL PostgreSQL ante fallos intermedios, dado que `CREATE DATABASE` no participa en una transacción ordinaria. No se añadieron `.env`, tokens, contraseñas, URLs administrativas, builds, cobertura, logs ni bases. Gateway continúa sin Prisma, el schema operacional compartido no fue modificado y ninguna credencial llega al frontend.
+
+## 12. Cierre de verificación — 18 de julio de 2026
+
+Se ejecutaron desde `gastroflow-saas`:
+
+- `npm run phase4:runner:test`: 5/5 pruebas aprobadas, incluyendo Windows con `node` + `npm-cli.js`, Linux, errores de spawn/señal/status y polling terminal/máximo.
+- `npm run phase4:verify`: aprobado con schemas Control y operacional válidos, lint sin errores, 16 pruebas Gateway, 38 Core y 29 Operations (83 unitarias backend), 20 E2E Gateway, 11 específicas Core y 9 específicas Operations. Los cuatro builds aprobaron y el control de secretos y `git diff --check` finalizaron correctamente. Frontend conserva una advertencia no bloqueante preexistente de Fast Refresh en `AuthContext.tsx`.
+- `npm run phase4:verify:integration`: **NO EJECUTADO**; el preflight terminó con `spawnSync docker ENOENT` porque Docker Desktop no está instalado o no está disponible en `PATH`.
+- La búsqueda de marcadores de corrupción solicitada solo encontró los conectores de árbol intencionales de `docs/SAAS_MODEL.md`. El mojibake real detectado en documentación y frontend fue corregido.
+
+La prueba aislada de Operations ejecutó dos veces el aprovisionamiento sobre el mismo estado persistente simulado. Confirmó que retry reutiliza el destino y no duplica categoría, producto, inventario, configuración tributaria ni secuencia; además confirmó IDs distintos a la plantilla, `categoryId` remapeado, conteos esperados, productos deshabilitados, inventario cero y Outbox/transacciones vacíos.
+
+No se crearon realmente rol ni base PostgreSQL en este cierre; tampoco se ejecutaron físicamente `migrate deploy`, copia de maestros, aislamiento, retry real, limpieza de `gf_test_*`, health ni recorrido manual. Esos puntos permanecen **NO VERIFICADOS** hasta ejecutar la suite con Docker Desktop iniciado y variables válidas. No se declara aprobada ninguna de esas evidencias.

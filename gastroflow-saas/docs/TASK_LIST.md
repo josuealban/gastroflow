@@ -1,65 +1,65 @@
 ﻿# Lista de tareas
 
-## Parte 0 â€” congelaciÃ³n âœ…
+## Parte 0 — congelación ✅
 
 - [x] Capturar rama, estado, historial, diff, archivos y versiones.
 - [x] Inspeccionar proyectos, HTTP/TCP, health, entornos, Docker, Prisma, scripts, docs y pruebas.
-- [x] Congelar arquitectura, estrategia de bases, sucursales, personal, inventario y facturaciÃ³n.
-- [x] Crear matriz acadÃ©mica y visiÃ³n de titulaciÃ³n.
-- [x] Inventariar contradicciones sin borrar cÃ³digo masivamente.
-- [x] Validar documentaciÃ³n, secretos y artefactos ignorados.
+- [x] Congelar arquitectura, estrategia de bases, sucursales, personal, inventario y facturación.
+- [x] Crear matriz académica y visión de titulación.
+- [x] Inventariar contradicciones sin borrar código masivamente.
+- [x] Validar documentación, secretos y artefactos ignorados.
 
 ---
 
-## Fase 1 â€” estructura base âœ…
+## Fase 1 — estructura base ✅
 
 - [x] Conservar cuatro proyectos independientes.
 - [x] Conservar Gateway HTTP 3000, Core TCP 3001 y Operations TCP 3002.
-- [x] Conservar frontend apuntando Ãºnicamente al Gateway.
-- [x] Alinear el nombre activo `operations-service` en cÃ³digo, variables y scripts.
+- [x] Conservar frontend apuntando únicamente al Gateway.
+- [x] Alinear el nombre activo `operations-service` en código, variables y scripts.
 - [x] Crear `.gitattributes` y `.editorconfig` sin reformateo masivo.
 - [x] Configurar `/api/v1`, `ValidationPipe`, CORS y apagado ordenado.
-- [x] Validar hosts, puertos, timeout y orÃ­genes con mensajes seguros.
-- [x] Reutilizar clientes TCP con tokens de inyecciÃ³n Ãºnicos.
+- [x] Validar hosts, puertos, timeout y orígenes con mensajes seguros.
+- [x] Reutilizar clientes TCP con tokens de inyección únicos.
 - [x] Definir contratos `{ cmd: 'core.health' }` y `{ cmd: 'operations.health' }`.
 - [x] Devolver HTTP 200 saludable y HTTP 503 degradado/indisponible.
-- [x] Retirar scripts raÃ­z de las tres bases globales.
+- [x] Retirar scripts raíz de las tres bases globales.
 - [x] Crear scripts reales de inicio, desarrollo, lint, test y build.
-- [x] Corregir los cuatro `.env.example` sin aÃ±adir secretos.
-- [x] Implementar la pantalla tÃ©cnica de estado y actualizaciÃ³n real.
+- [x] Corregir los cuatro `.env.example` sin añadir secretos.
+- [x] Implementar la pantalla técnica de estado y actualización real.
 - [x] Ejecutar lint sin errores en los cuatro proyectos.
 - [x] Ejecutar 41+ pruebas unitarias y 6+ pruebas E2E correctamente.
-- [x] Compilar los cuatro proyectos desde la raÃ­z.
-- [x] Verificar manualmente health 200, degradaciÃ³n 503 y frontend real.
+- [x] Compilar los cuatro proyectos desde la raíz.
+- [x] Verificar manualmente health 200, degradación 503 y frontend real.
 - [x] Documentar HTTP, cliente-servidor y microservicios.
 
 ---
 
-## Fase 2 â€” Prisma y persistencia âœ…
+## Fase 2 — Prisma y persistencia ✅
 
 - [x] Retirar Prisma provisional y las tres bases globales.
-- [x] DiseÃ±ar schema central `gastroflow_control`.
+- [x] Diseñar schema central `gastroflow_control`.
 - [x] Incluir `Restaurant`, `Branch`, `Subscription`, `Plan`, `User`, `Role`, `Permission`, `UserRole`, `UserBranchRole`.
-- [x] DiseÃ±ar schema operacional Ãºnico sin `branchId` ni `restaurantId` globales.
-- [x] Crear migraciÃ³n inicial de `gastroflow_control`.
-- [x] Crear migraciÃ³n operacional con schema completo y 5 vistas SQL.
+- [x] Diseñar schema operacional único sin `branchId` ni `restaurantId` globales.
+- [x] Crear migración inicial de `gastroflow_control`.
+- [x] Crear migración operacional con schema completo y 5 vistas SQL.
 - [x] Crear seeds de desarrollo para control, Principal y Norte.
 - [x] Crear bases `gastroflow_demo_principal` y `gastroflow_demo_norte`.
 - [x] Implementar cifrado AES-256-GCM en `DatabaseCredentialsEncryptionService`.
-- [x] Implementar resoluciÃ³n TCP segura en `BranchConnectionResolverService`.
+- [x] Implementar resolución TCP segura en `BranchConnectionResolverService`.
 - [x] Implementar `BranchConnectionController` con `{ cmd: 'branch.connection.resolve' }`.
-- [x] Reparar `branch-connection.controller.ts` y `branch-connection-resolver.service.ts` (corrupciÃ³n UTF-16).
-- [x] Implementar factorÃ­a de Prisma Client por sucursal.
-- [x] Implementar cachÃ© de Prisma Clients con desconexiÃ³n en apagado.
+- [x] Reparar `branch-connection.controller.ts` y `branch-connection-resolver.service.ts` (corrupción UTF-16).
+- [x] Implementar factoría de Prisma Client por sucursal.
+- [x] Implementar caché de Prisma Clients con desconexión en apagado.
 - [x] Implementar `BranchConnectionResolverClient` en Operations.
-- [x] Verificar aislamiento fÃ­sico entre Principal y Norte (requiere PostgreSQL activo).
+- [x] Verificar aislamiento físico entre Principal y Norte (requiere PostgreSQL activo).
 - [x] Implementar `vw_low_stock`, `vw_daily_sales`, `vw_invoice_summary`, `vw_top_selling_products`, `vw_inventory_movements_summary`.
 - [x] Compilar los cuatro proyectos sin errores TS.
 - [x] Ejecutar lint en los cuatro proyectos sin errores.
 - [x] Ejecutar 30 pruebas unitarias en Core, 20 en Operations, 15 en Gateway.
 - [x] Ejecutar E2E: 1 en Core, 1 en Operations, 4 en Gateway.
 - [x] Verificar health general HTTP 200 con todos los servicios.
-- [x] Actualizar documentaciÃ³n de Fase 2.
+- [x] Actualizar documentación de Fase 2.
 - [x] Corregir `branch-status.ts` (importaba `branch-client` en lugar de `control-client`).
 
 ---
@@ -86,17 +86,17 @@
 - [x] Frontend mínimo, E2E, Postman y documentación
 - [ ] Integración PostgreSQL real y prueba manual (entorno no disponible)
 
-- [x] Implementar listado y selecciÃ³n autorizada de sucursal.
+- [x] Implementar listado y selección autorizada de sucursal.
 - [x] Implementar `POST /api/v1/session/branch`.
 - [x] Implementar `POST /api/v1/branches` sin secretos en el DTO.
 - [x] Implementar estados `PROVISIONING`, `ACTIVE` y `FAILED`.
-- [x] Crear el aprovisionador de base operacional, aplicar schema, copiar catÃ¡logos e inicializar en cero.
-- [x] Probar de forma aislada reintentos y lÃ­mites del plan.
-- [ ] Verificar aprovisionamiento y compensaciÃ³n contra PostgreSQL real (entorno no disponible).
+- [x] Crear el aprovisionador de base operacional, aplicar schema, copiar catálogos e inicializar en cero.
+- [x] Probar de forma aislada reintentos y límites del plan.
+- [ ] Verificar aprovisionamiento y compensación contra PostgreSQL real (entorno no disponible).
 
 ---
 
-## Fase 5 â€” personal â³ PENDIENTE
+## Fase 5 — personal ⏳ PENDIENTE
 
 - [ ] Implementar usuarios y perfiles centrales.
 - [ ] Implementar `UserBranchRole` y asignaciones.
@@ -105,32 +105,32 @@
 
 ---
 
-## Fase 6 â€” platillos â³ PENDIENTE
+## Fase 6 — platillos ⏳ PENDIENTE
 
-- [ ] Implementar categorÃ­as y platillos.
+- [ ] Implementar categorías y platillos.
 - [ ] Implementar `+ Nuevo platillo`.
-- [ ] Guardar imÃ¡genes externamente y sÃ³lo `imageUrl` en PostgreSQL.
+- [ ] Guardar imágenes externamente y sólo `imageUrl` en PostgreSQL.
 - [ ] Permitir ingredientes como texto libre, sin receta obligatoria.
 
 ---
 
-## Fase 7 â€” inventario y compras â³ PENDIENTE
+## Fase 7 — inventario y compras ⏳ PENDIENTE
 
-- [ ] Implementar tipos, unidades y catÃ¡logo de inventario.
+- [ ] Implementar tipos, unidades y catálogo de inventario.
 - [ ] Implementar proveedores, compras y movimientos transaccionales.
 - [ ] Inicializar existencias y costos en cero al copiar plantilla.
-- [ ] Implementar consulta periÃ³dica de 15 o 30 segundos.
+- [ ] Implementar consulta periódica de 15 o 30 segundos.
 
 ---
 
-## Fase 8 â€” clientes y mesas â³ PENDIENTE
+## Fase 8 — clientes y mesas ⏳ PENDIENTE
 
 - [ ] Implementar clientes y reservaciones en la base de sucursal.
-- [ ] Implementar mesas, estados, bÃºsqueda, filtros y paginaciÃ³n.
+- [ ] Implementar mesas, estados, búsqueda, filtros y paginación.
 
 ---
 
-## Fase 9 â€” pedidos â³ PENDIENTE
+## Fase 9 — pedidos ⏳ PENDIENTE
 
 - [ ] Implementar pedidos con varios platillos.
 - [ ] Conservar snapshots de nombre y precio.
@@ -138,29 +138,29 @@
 
 ---
 
-## Fase 10 â€” facturaciÃ³n â³ PENDIENTE
+## Fase 10 — facturación ⏳ PENDIENTE
 
 - [ ] Generar factura interna desde el pedido.
 - [ ] Leer tasa activa desde `TaxConfiguration`.
-- [ ] Proteger secuencia mediante transacciÃ³n.
-- [ ] Implementar historia, filtros, paginaciÃ³n y archivo lÃ³gico.
-- [ ] Mantener explÃ­citamente fuera del MVP la autorizaciÃ³n SRI.
+- [ ] Proteger secuencia mediante transacción.
+- [ ] Implementar historia, filtros, paginación y archivo lógico.
+- [ ] Mantener explícitamente fuera del MVP la autorización SRI.
 
 ---
 
-## Fase 11 â€” frontend comercial â³ PENDIENTE
+## Fase 11 — frontend comercial ⏳ PENDIENTE
 
 - [ ] Implementar login y tarjetas de sucursales.
-- [ ] Implementar selecciÃ³n de sucursal y navegaciÃ³n protegida.
+- [ ] Implementar selección de sucursal y navegación protegida.
 - [ ] Implementar pantallas de personal, platillos, inventario, clientes, pedidos y facturas.
-- [ ] Implementar estados de carga, vacÃ­o y error accesibles.
+- [ ] Implementar estados de carga, vacío y error accesibles.
 
 ---
 
-## Fase 12 â€” reportes, calidad y despliegue â³ PENDIENTE
+## Fase 12 — reportes, calidad y despliegue ⏳ PENDIENTE
 
-- [ ] Crear colecciÃ³n Postman y evidencia acadÃ©mica.
-- [ ] Completar unitarias, E2E, integraciÃ³n, seguridad y rendimiento.
+- [ ] Crear colección Postman y evidencia académica.
+- [ ] Completar unitarias, E2E, integración, seguridad y rendimiento.
 - [ ] Implementar reportes y vistas SQL adicionales justificadas.
 - [ ] Configurar HTTPS, secretos, backups, observabilidad y CI/CD.
 - [ ] Validar usabilidad con usuarios y documentar resultados.

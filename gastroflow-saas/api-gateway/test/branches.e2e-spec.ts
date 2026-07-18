@@ -134,6 +134,25 @@ describe('Branches administration (e2e)', () => {
     expect(body.status).toBe('PROVISIONING');
     expect(JSON.stringify(body)).not.toMatch(/database|password/i);
   });
+  it('normalizes a lowercase branch code before sending it to Core', async () => {
+    await request(server())
+      .post('/api/v1/branches')
+      .set('Authorization', `Bearer ${owner}`)
+      .set('Idempotency-Key', '10000000-0000-4000-8000-000000000002')
+      .send({
+        name: 'Sucursal Norte',
+        code: '  norte-01  ',
+        templateBranchId: '20000000-0000-4000-8000-000000000001',
+      })
+      .expect(202);
+    const calls = core.send.mock.calls as Array<
+      [{ cmd: string }, { body: { code: string } }]
+    >;
+    const createCall = calls.findLast(
+      ([pattern]) => pattern.cmd === 'branches.create',
+    );
+    expect(createCall?.[1].body.code).toBe('NORTE-01');
+  });
   it('rejects missing key and invalid body', async () => {
     await request(server())
       .post('/api/v1/branches')
