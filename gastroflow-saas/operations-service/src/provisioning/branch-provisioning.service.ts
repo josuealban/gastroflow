@@ -42,6 +42,12 @@ export class BranchProvisioningService {
     if (!this.token || token !== this.token) throw new Error('Unauthorized');
   }
   async provision(input: ProvisionInput) {
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        input.branchId,
+      )
+    )
+      throw new Error('Invalid branch identifier');
     if (input.target.host !== this.host || input.target.port !== this.port)
       throw new Error('Provisioning target is not allowed');
     const db = this.ids.validate(input.target.databaseName),
@@ -100,10 +106,14 @@ export class BranchProvisioningService {
         const source = await this.branches.getClientByBranchId(
           input.templateBranchId,
         );
-        const [categories, products, inventory] = await Promise.all([
+        const [categories, products, inventory, tax] = await Promise.all([
           source.category.findMany(),
           source.product.findMany(),
           source.inventoryItem.findMany(),
+          source.taxConfiguration.findFirst({
+            where: { isActive: true },
+            orderBy: { effectiveFrom: 'desc' },
+          }),
         ]);
         await target.$transaction(async (tx) => {
           const map = new Map<string, string>();
@@ -146,6 +156,21 @@ export class BranchProvisioningService {
                 lostQuantity: 0,
               },
             });
+          await tx.taxConfiguration.create({
+            data: {
+              name: tax?.name ?? input.restaurantDefaults.taxName,
+              rate: tax?.rate ?? input.restaurantDefaults.taxRate,
+              effectiveFrom: new Date(),
+              isActive: true,
+            },
+          });
+          await tx.invoiceSequence.create({
+            data: {
+              establishment: '001',
+              emissionPoint: '001',
+              currentNumber: 0,
+            },
+          });
         });
       } else {
         await target.$transaction([
@@ -166,6 +191,63 @@ export class BranchProvisioningService {
           }),
         ]);
       }
+      const [
+        taxCount,
+        sequence,
+        customers,
+        reservations,
+        tables,
+        orders,
+        payments,
+        invoices,
+        suppliers,
+        purchases,
+        movements,
+        invalidProducts,
+        invalidInventory,
+      ] = await Promise.all([
+        target.taxConfiguration.count({ where: { isActive: true } }),
+        target.invoiceSequence.findFirst(),
+        target.customer.count(),
+        target.reservation.count(),
+        target.restaurantTable.count(),
+        target.order.count(),
+        target.payment.count(),
+        target.invoice.count(),
+        target.supplier.count(),
+        target.purchase.count(),
+        target.inventoryMovement.count(),
+        target.product.count({ where: { isAvailable: true } }),
+        target.inventoryItem.count({
+          where: {
+            OR: [
+              { currentStock: { not: 0 } },
+              { costPerUnit: { not: 0 } },
+              { damagedQuantity: { not: 0 } },
+              { lostQuantity: { not: 0 } },
+            ],
+          },
+        }),
+      ]);
+      const transactionRows =
+        customers +
+        reservations +
+        tables +
+        orders +
+        payments +
+        invoices +
+        suppliers +
+        purchases +
+        movements;
+      if (
+        taxCount < 1 ||
+        !sequence ||
+        sequence.currentNumber !== 0 ||
+        invalidProducts !== 0 ||
+        invalidInventory !== 0 ||
+        transactionRows !== 0
+      )
+        throw new Error('Provisioning verification failed');
       return { success: true };
     } finally {
       await target.$disconnect();

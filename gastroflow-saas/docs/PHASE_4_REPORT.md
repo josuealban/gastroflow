@@ -1,21 +1,45 @@
 # Informe de Fase 4
 
-## Objetivo y alcance
+## 1. Objetivo, rama y estado inicial
 
-Se implementó administración y aprovisionamiento persistente de sucursales sobre `codex/fase-4-sucursales`, sin crear microservicios por sucursal ni avanzar a Fase 5.
+La administración y el aprovisionamiento persistente de sucursales se recuperaron en `codex/fase-4-sucursales`. Al iniciar la tarea de cierre, el trabajo estaba limpio y publicado en `2e2567af`; se auditó y completó sin avanzar a Fase 5.
 
-## Implementación
+## 2. Persistencia central
 
-- Migración central con `BranchProvisioningJob`, estado, intentos, idempotency key y request hash.
-- Endpoints GET/POST/PATCH, progreso, retry y personal asignable protegidos por permisos.
-- Transacción Serializable para plan, límite, Branch, job y asignaciones; reintento P2034.
-- Generación interna de nombre, usuario y contraseña; AES-256-GCM y respuestas sanitizadas.
-- Procesador persistente con reclamo atómico, recuperación, ACTIVE/FAILED y reintento.
-- Operations valida identificadores, crea rol/base idempotentes, ejecuta migrate deploy, copia maestros y deja datos transaccionales en cero.
-- Invalidación idempotente de caché disponible por TCP.
-- Frontend mínimo con listado, formulario, polling acotado, selección, retry y desactivación según permisos.
-- Postman, scripts y pruebas aisladas añadidos.
+La migración `20260718100000_add_branch_provisioning_jobs` añade `BranchProvisioningJob` y `ProvisioningJobStatus`. El trabajo registra sucursal, plantilla, solicitante, clave idempotente, hash SHA-256, intentos, fechas y errores sanitizados. La clave es única por restaurante. La creación usa una transacción `Serializable`, cuenta `PROVISIONING`, `ACTIVE` e `INACTIVE` dentro de ella y reintenta conflictos Prisma `P2034` de forma limitada.
 
-## Validación y limitaciones
+## 3. API y autorización
 
-`phase4:verify` fue aprobado: schemas válidos, lint sin errores, 82 unitarias, 19 E2E, pruebas específicas y cuatro builds. Docker no está instalado y faltan variables locales para la suite real; `phase4:verify:integration` fue forzado y falló, por lo que creación real de rol/base, migrate deploy, copia real y health manual no se declaran aprobados. No se expusieron credenciales, Gateway no usa Prisma, no se modificó el schema operacional, no se implementó Fase 5 y no se hizo commit ni push.
+Gateway expone listado, detalle, creación `202`, edición, estado, progreso, reintento y personal asignable. `PermissionsGuard` exige `branches.read`, `branches.create`, `branches.update`, `branches.deactivate` o `branches.retry-provisioning`. OWNER recibe todos; MANAGER solo lectura y edición. El DTO rechaza campos de infraestructura y valida longitudes, coordenadas, UUID y código alfanumérico con guiones. La clave `Idempotency-Key` es un UUID obligatorio; misma clave y cuerpo reutiliza la sucursal, mientras un cuerpo diferente devuelve 409.
+
+## 4. Credenciales y procesador
+
+Core genera nombres PostgreSQL seguros de hasta 63 caracteres y una contraseña de alta entropía mediante `crypto.randomBytes`. La contraseña se cifra con AES-256-GCM; host y puerto provienen de configuración. El procesador reclama trabajos mediante `updateMany`, incrementa intentos, recupera trabajos abandonados, aplica timeout y termina en `ACTIVE/COMPLETED`, `PENDING` o `FAILED`. Los errores persistidos y las respuestas no contienen credenciales.
+
+## 5. Operations y PostgreSQL
+
+El patrón `{ cmd: 'branch.provision' }` valida token, UUID de sucursal, host, puerto e identificadores SQL con `^[a-z][a-z0-9_]{1,62}$`. El rol y la base se crean idempotentemente y se ejecuta `prisma migrate deploy`. No se usa `migrate dev`, no se acepta infraestructura desde el frontend y `POSTGRES_ADMIN_URL` no se devuelve.
+
+## 6. Plantilla y verificación
+
+La copia transaccional crea categorías con IDs nuevos, remapea productos con IDs nuevos y `isAvailable=false`, y crea inventario con stock, costo, dañados y perdidos en cero. Copia la configuración tributaria activa o usa el valor predeterminado, y siempre crea `InvoiceSequence.currentNumber=0`. Antes de responder éxito se comprueban impuesto activo, secuencia cero, productos no disponibles, inventario cero y ausencia de clientes, reservaciones, mesas, pedidos, pagos, facturas, proveedores, compras y movimientos. No se copian ventas, historial, PDFs ni datos transaccionales.
+
+## 7. Propietario, personal y estados
+
+El solicitante activo del restaurante queda asignado automáticamente con sus roles. `initialStaff` valida usuarios y roles activos del mismo restaurante, duplicados y `maxUsersPerBranch`; no crea usuarios ni copia el personal de la plantilla. Las transiciones administrativas permitidas son `ACTIVE → INACTIVE` e `INACTIVE → ACTIVE`; no se desactiva la principal ni la única activa. Retry solo acepta `FAILED`, reutiliza sucursal y credenciales y vuelve a `PROVISIONING`. `{ cmd: 'branch.connection.invalidate' }` es idempotente y se solicita después de cambios de estado.
+
+## 8. Frontend y Postman
+
+La sección Sucursales muestra identificación, ciudad, principal, estado, fecha y acciones por permiso. El formulario contiene nombre, código, descripción, dirección, ciudad, teléfono, coordenadas, plantilla y personal inicial con rol. Usa `crypto.randomUUID()`, conserva la clave ante fallo incierto y consulta cada cuatro segundos hasta un máximo de 30 ciclos. Incluye abrir, editar, activar, desactivar y reintentar. La colección y el ambiente Postman contienen los recorridos y variables de Fase 4.
+
+## 9. Pruebas, lint, builds y seguridad
+
+La verificación aislada incluye schemas Prisma, lint, pruebas unitarias de los tres servicios, E2E Gateway, pruebas específicas de sucursales e identificadores de aprovisionamiento, cuatro builds, búsqueda de secretos y `git diff --check`. Los resultados finales exactos se registran en el commit de cierre y en el informe entregado al finalizar esta tarea.
+
+## 10. Integración, health y limitaciones
+
+La integración PostgreSQL real y el recorrido health/manual están **NO EJECUTADOS** porque Docker no está disponible y las credenciales PostgreSQL/demo locales no están configuradas de forma válida. El intento del 17 de julio de 2026 terminó por ese preflight, sin crear ni borrar bases. Por ello no se afirma evidencia física de creación de rol/base, migración, aislamiento ni compensación. El código de esos flujos queda implementado y validado por compilación/pruebas aisladas, pero no asciende a evidencia de infraestructura real. Antes de Fase 5 debe ejecutarse `phase4:verify:integration` en un entorno desechable y limpiar exclusivamente recursos `gf_test_*`.
+
+## 11. Riesgos y seguridad
+
+El principal riesgo pendiente es probar compensación de DDL PostgreSQL ante fallos intermedios, dado que `CREATE DATABASE` no participa en una transacción ordinaria. No se añadieron `.env`, tokens, contraseñas, URLs administrativas, builds, cobertura, logs ni bases. Gateway continúa sin Prisma, el schema operacional compartido no fue modificado y ninguna credencial llega al frontend.

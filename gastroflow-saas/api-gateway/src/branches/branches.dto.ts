@@ -10,6 +10,7 @@ import {
   IsString,
   IsUUID,
   Length,
+  Matches,
   MaxLength,
   Min,
   ValidateNested,
@@ -30,6 +31,7 @@ export class CreateBranchDto {
   )
   @IsString()
   @Length(2, 20)
+  @Matches(/^[A-Z0-9-]+$/)
   code!: string;
   @IsOptional() @IsString() @MaxLength(500) description?: string;
   @IsOptional() @IsString() @MaxLength(250) address?: string;

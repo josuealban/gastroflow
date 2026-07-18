@@ -384,6 +384,11 @@ export class BranchAdminService {
     });
     if (!branch) this.fail(404, 'Branch not found');
     if (
+      (i.status === 'INACTIVE' && branch.status !== 'ACTIVE') ||
+      (i.status === 'ACTIVE' && branch.status !== 'INACTIVE')
+    )
+      this.fail(409, 'Invalid branch status transition');
+    if (
       i.status === 'INACTIVE' &&
       (branch.isPrimary ||
         (await this.db.branch.count({
