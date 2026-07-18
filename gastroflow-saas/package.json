@@ -39,7 +39,9 @@
     "verify:branch-isolation": "npm --prefix operations-service run verify:branch-isolation",
     "phase2:setup": "npm run db:up && npm --prefix operations-service run wait:postgres && npm run prisma:generate && npm run prisma:migrate:control && npm run prisma:migrate:principal && npm run prisma:migrate:norte && npm run prisma:seed:control && npm run prisma:seed:principal && npm run prisma:seed:norte",
     "phase2:verify": "npm --prefix core-service run prisma:control:validate && npm --prefix operations-service run prisma:branch:validate && npm run verify:branch-isolation && npm run lint && npm run test && npm run build",
-    "phase3:verify": "npm --prefix core-service run prisma:control:validate && npm run lint && npm run test && npm --prefix api-gateway run test:e2e && npm --prefix core-service run test:e2e && npm --prefix operations-service run test:e2e && npm run build && npm --prefix core-service run auth:test"
+    "security:check": "node scripts/verify-no-secrets.mjs",
+    "phase3:verify": "npm --prefix core-service run prisma:control:validate && npm run lint && npm run test && npm --prefix api-gateway run test:e2e && npm --prefix core-service run test:e2e && npm --prefix operations-service run test:e2e && npm --prefix core-service run auth:test && npm run build && npm run security:check && git -c safe.directory=* diff --check",
+    "phase3:verify:integration": "node scripts/run-phase3-integration.mjs"
   },
   "devDependencies": {
     "concurrently": "^10.0.3"

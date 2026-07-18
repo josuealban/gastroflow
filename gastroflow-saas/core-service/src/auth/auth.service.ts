@@ -6,6 +6,7 @@ import { ControlPrismaService } from '../database/control/control-prisma.service
 import { PasswordService } from './password.service';
 import { TokenService } from './token.service';
 import { BranchSummary, TokenPair } from './auth.types';
+import { RefreshTokenService } from './refresh-token.service';
 
 @Injectable()
 export class AuthService {
@@ -14,6 +15,7 @@ export class AuthService {
     private readonly db: ControlPrismaService,
     private readonly passwords: PasswordService,
     private readonly tokens: TokenService,
+    private readonly refreshTokens: RefreshTokenService,
     config: ConfigService,
   ) {
     this.internalToken = config.get<string>('INTERNAL_SERVICE_TOKEN') ?? '';
@@ -186,21 +188,14 @@ export class AuthService {
       permissions: ctx.permissions,
     });
     const nextPayload = await this.tokens.verifyRefresh(pair.refreshToken);
-    await this.db.$transaction([
-      this.db.refreshToken.update({
-        where: { id: record.id },
-        data: { revokedAt: new Date() },
-      }),
-      this.db.refreshToken.create({
-        data: {
-          userId: payload.sub,
-          tokenHash: this.hash(pair.refreshToken),
-          expiresAt: new Date(
-            (nextPayload as unknown as { exp: number }).exp * 1000,
-          ),
-        },
-      }),
-    ]);
+    await this.refreshTokens.rotate({
+      recordId: record.id,
+      userId: payload.sub,
+      tokenHash: this.hash(pair.refreshToken),
+      expiresAt: new Date(
+        (nextPayload as unknown as { exp: number }).exp * 1000,
+      ),
+    });
     return this.publicResponse(pair, ctx, payload.branchId);
   }
   async logout(input: { refreshToken?: string; internalToken: string }) {
@@ -250,7 +245,8 @@ export class AuthService {
     const record = await this.db.refreshToken.findUnique({
       where: { tokenHash: this.hash(input.refreshToken) },
     });
-    if (!record || record.revokedAt) this.fail(401, 'Unauthorized');
+    if (!record || record.revokedAt || record.expiresAt <= new Date())
+      this.fail(401, 'Unauthorized');
     const ctx = await this.context(input.userId, input.branchId);
     const pair = await this.tokens.issue({
       sub: input.userId,
@@ -261,19 +257,12 @@ export class AuthService {
       permissions: ctx.permissions,
     });
     const np = await this.tokens.verifyRefresh(pair.refreshToken);
-    await this.db.$transaction([
-      this.db.refreshToken.update({
-        where: { id: record.id },
-        data: { revokedAt: new Date() },
-      }),
-      this.db.refreshToken.create({
-        data: {
-          userId: input.userId,
-          tokenHash: this.hash(pair.refreshToken),
-          expiresAt: new Date((np as unknown as { exp: number }).exp * 1000),
-        },
-      }),
-    ]);
+    await this.refreshTokens.rotate({
+      recordId: record.id,
+      userId: input.userId,
+      tokenHash: this.hash(pair.refreshToken),
+      expiresAt: new Date((np as unknown as { exp: number }).exp * 1000),
+    });
     return this.publicResponse(pair, ctx, input.branchId);
   }
   async roles(input: {

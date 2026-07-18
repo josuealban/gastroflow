@@ -5,9 +5,10 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { PasswordService } from './password.service';
 import { TokenService } from './token.service';
+import { RefreshTokenService } from './refresh-token.service';
 @Module({
   imports: [ControlPrismaModule, JwtModule.register({})],
   controllers: [AuthController],
-  providers: [AuthService, PasswordService, TokenService],
+  providers: [AuthService, PasswordService, TokenService, RefreshTokenService],
 })
 export class AuthModule {}

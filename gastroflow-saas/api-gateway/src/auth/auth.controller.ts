@@ -1,12 +1,22 @@
-import { Body, Controller, Get, Post, Req, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
-import { Throttle } from '@nestjs/throttler';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { CurrentUser, Permissions } from './auth.decorators';
 import { LoginDto, SelectBranchDto } from './auth.dto';
 import type { RequestUser } from './jwt.strategy';
 import { Public } from './public.decorator';
+import { parseDurationMs } from '../configuration';
 interface CoreAuthResponse {
   accessToken: string;
   refreshToken: string;
@@ -21,6 +31,7 @@ export class AuthController {
   private readonly secure: boolean;
   private readonly sameSite: 'lax' | 'strict' | 'none';
   private readonly domain?: string;
+  private readonly cookieMaxAge: number;
   constructor(
     private readonly auth: AuthService,
     config: ConfigService,
@@ -30,6 +41,10 @@ export class AuthController {
     this.secure = config.get('COOKIE_SECURE') === 'true';
     this.sameSite = config.get('COOKIE_SAME_SITE') ?? 'lax';
     this.domain = config.get('COOKIE_DOMAIN') || undefined;
+    this.cookieMaxAge = parseDurationMs(
+      config.get('REFRESH_TOKEN_TTL') ?? '7d',
+      'REFRESH_TOKEN_TTL',
+    );
   }
   private set(res: Response, value: string) {
     res.cookie(this.cookieName, value, {
@@ -38,7 +53,7 @@ export class AuthController {
       sameSite: this.sameSite,
       path: this.cookiePath,
       domain: this.domain,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge: this.cookieMaxAge,
     });
   }
   private clean(res: Response) {
@@ -64,8 +79,9 @@ export class AuthController {
     return typeof value === 'string' ? value : '';
   }
   @Public()
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @UseGuards(ThrottlerGuard)
   @Post('auth/login')
+  @HttpCode(200)
   async login(
     @Body() body: LoginDto,
     @Res({ passthrough: true }) res: Response,
@@ -74,7 +90,7 @@ export class AuthController {
     this.set(res, x.refreshToken);
     return this.withoutRefresh(x);
   }
-  @Public() @Post('auth/refresh') async refresh(
+  @Public() @Post('auth/refresh') @HttpCode(200) async refresh(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
@@ -84,7 +100,7 @@ export class AuthController {
     this.set(res, x.refreshToken);
     return this.withoutRefresh(x);
   }
-  @Public() @Post('auth/logout') async logout(
+  @Public() @Post('auth/logout') @HttpCode(200) async logout(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
@@ -100,7 +116,7 @@ export class AuthController {
   @Get('session/branches') branches(@CurrentUser() u: RequestUser) {
     return this.auth.send('session.branches.list', { userId: u.sub });
   }
-  @Post('session/branch') async select(
+  @Post('session/branch') @HttpCode(200) async select(
     @Body() body: SelectBranchDto,
     @CurrentUser() u: RequestUser,
     @Req() req: Request,

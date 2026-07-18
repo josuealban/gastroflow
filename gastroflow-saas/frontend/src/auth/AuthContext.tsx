@@ -28,6 +28,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refresh = useCallback(async () => { try { apply((await apiClient.post<AuthResponse>('/auth/refresh')).data); return true; } catch { memoryToken = null; setUser(null); return false; } }, []);
   useEffect(() => { void refresh().finally(() => setReady(true)); }, [refresh]);
   useEffect(() => { const id = apiClient.interceptors.request.use((request) => { if (memoryToken) request.headers.Authorization = `Bearer ${memoryToken}`; return request; }); return () => apiClient.interceptors.request.eject(id); }, []);
+  useEffect(() => {
+    const id = apiClient.interceptors.response.use(
+      (response) => response,
+      async (error: unknown) => {
+        const candidate = error as { response?: { status?: number }; config?: { url?: string; _authRetried?: boolean } };
+        const request = candidate.config;
+        if (candidate.response?.status === 401 && request && !request._authRetried && !request.url?.includes('/auth/')) {
+          request._authRetried = true;
+          if (await refresh()) return apiClient(request);
+        }
+        throw error;
+      },
+    );
+    return () => apiClient.interceptors.response.eject(id);
+  }, [refresh]);
   const value = useMemo<AuthState>(() => ({
     user, branches, ready, refresh,
     login: async (credentials) => apply((await apiClient.post<AuthResponse>('/auth/login', credentials)).data),

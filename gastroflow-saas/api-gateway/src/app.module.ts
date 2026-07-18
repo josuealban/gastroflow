@@ -9,7 +9,7 @@ import {
   OPERATIONS_SERVICE_CLIENT,
 } from './injection-tokens';
 import { APP_GUARD } from '@nestjs/core';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard, PermissionsGuard, RolesGuard } from './auth/auth.guards';
 import { AuthController } from './auth/auth.controller';
@@ -20,7 +20,15 @@ import { AuthService } from './auth/auth.service';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    ThrottlerModule.forRoot([{ ttl: 60000, limit: 5 }]),
+    ThrottlerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => [
+        {
+          ttl: Number(config.get('AUTH_RATE_LIMIT_TTL_MS') ?? 60000),
+          limit: Number(config.get('AUTH_RATE_LIMIT_MAX') ?? 5),
+        },
+      ],
+    }),
     ClientsModule.registerAsync([
       {
         name: CORE_SERVICE_CLIENT,
@@ -70,7 +78,6 @@ import { AuthService } from './auth/auth.service';
   controllers: [AppController, AuthController],
   providers: [
     AuthService,
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },
