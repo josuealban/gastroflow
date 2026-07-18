@@ -5,6 +5,8 @@ import {
   UnauthorizedException,
   ForbiddenException,
   BadRequestException,
+  ConflictException,
+  NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ClientProxy } from '@nestjs/microservices';
@@ -32,6 +34,8 @@ export class AuthService {
       if (x.statusCode === 400) throw new BadRequestException(x.message);
       if (x.statusCode === 401) throw new UnauthorizedException(x.message);
       if (x.statusCode === 403) throw new ForbiddenException(x.message);
+      if (x.statusCode === 404) throw new NotFoundException(x.message);
+      if (x.statusCode === 409) throw new ConflictException(x.message);
       throw new ServiceUnavailableException('Core Service unavailable');
     }
   }

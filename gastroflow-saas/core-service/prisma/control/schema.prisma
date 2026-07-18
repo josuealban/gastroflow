@@ -22,6 +22,13 @@ enum SubscriptionStatus {
   SUSPENDED
 }
 
+enum ProvisioningJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
 model Restaurant {
   id           String        @id @default(uuid()) @db.Uuid
   slug         String        @unique
@@ -39,6 +46,7 @@ model Restaurant {
   users        User[]
   roles        Role[]
   subscription Subscription?
+  provisioningJobs BranchProvisioningJob[]
 
   @@index([isActive])
   @@index([taxId])
@@ -70,6 +78,8 @@ model Branch {
   updatedAt                 DateTime     @updatedAt
   restaurant                Restaurant   @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
   userBranches              UserBranch[]
+  provisioningJob           BranchProvisioningJob?
+  templateForJobs           BranchProvisioningJob[] @relation("ProvisioningTemplate")
 
   @@unique([restaurantId, code])
   @@index([restaurantId])
@@ -77,6 +87,34 @@ model Branch {
   @@index([isPrimary])
   @@index([createdAt])
   @@map("branches")
+}
+
+model BranchProvisioningJob {
+  id                String                @id @default(uuid()) @db.Uuid
+  restaurantId      String                @db.Uuid
+  branchId          String                @unique @db.Uuid
+  templateBranchId  String?               @db.Uuid
+  requestedByUserId String                @db.Uuid
+  idempotencyKey    String
+  requestHash       String
+  status            ProvisioningJobStatus @default(PENDING)
+  attempts          Int                   @default(0)
+  maxAttempts       Int                   @default(3)
+  startedAt         DateTime?
+  completedAt       DateTime?
+  nextRetryAt       DateTime?
+  lastErrorCode     String?
+  lastErrorMessage  String?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  restaurant        Restaurant            @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
+  branch            Branch                @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  templateBranch    Branch?               @relation("ProvisioningTemplate", fields: [templateBranchId], references: [id], onDelete: Restrict)
+  requestedByUser   User                  @relation(fields: [requestedByUserId], references: [id], onDelete: Restrict)
+
+  @@unique([restaurantId, idempotencyKey])
+  @@index([status, nextRetryAt])
+  @@map("branch_provisioning_jobs")
 }
 
 model Plan {
@@ -130,6 +168,7 @@ model User {
   userRoles       UserRole[]
   userBranches    UserBranch[]
   refreshTokens   RefreshToken[]
+  provisioningJobs BranchProvisioningJob[]
 
   @@unique([restaurantId, email])
   @@index([restaurantId])

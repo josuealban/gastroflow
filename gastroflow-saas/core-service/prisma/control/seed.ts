@@ -33,6 +33,7 @@ const permissionNames = [
   'branches.create',
   'branches.update',
   'branches.deactivate',
+  'branches.retry-provisioning',
   'products.read',
   'products.create',
   'products.update',
@@ -269,7 +270,15 @@ async function main(): Promise<void> {
 
   const rolePermissions: Record<string, readonly string[]> = {
     OWNER: permissionNames,
-    MANAGER: permissionNames.filter((name) => name !== 'settings.manage'),
+    MANAGER: permissionNames.filter(
+      (name) =>
+        name !== 'settings.manage' &&
+        ![
+          'branches.create',
+          'branches.deactivate',
+          'branches.retry-provisioning',
+        ].includes(name),
+    ),
     WAITER: [
       'products.read',
       'customers.read',

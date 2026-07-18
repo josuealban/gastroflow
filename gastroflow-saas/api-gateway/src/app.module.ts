@@ -14,6 +14,7 @@ import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard, PermissionsGuard, RolesGuard } from './auth/auth.guards';
 import { AuthController } from './auth/auth.controller';
 import { AuthService } from './auth/auth.service';
+import { BranchesController } from './branches/branches.controller';
 
 @Module({
   imports: [
@@ -75,7 +76,7 @@ import { AuthService } from './auth/auth.service';
     ]),
     AuthModule,
   ],
-  controllers: [AppController, AuthController],
+  controllers: [AppController, AuthController, BranchesController],
   providers: [
     AuthService,
     { provide: APP_GUARD, useClass: JwtAuthGuard },

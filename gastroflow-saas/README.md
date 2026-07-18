@@ -36,6 +36,8 @@ gastroflow_control       base operacional por sucursal
 
 La Fase 3 incorpora autenticación real, rotación atómica y RBAC. No existen todavía CRUD comerciales.
 
+La Fase 4 incorpora administración de sucursales, respuesta 202, idempotencia, límite de plan y aprovisionamiento persistente Core→Operations. Su integración PostgreSQL real requiere Docker/PostgreSQL disponible.
+
 ## Estrategia de bases
 
 | Base | Tipo | Responsable |

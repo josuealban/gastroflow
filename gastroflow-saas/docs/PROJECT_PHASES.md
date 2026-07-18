@@ -66,3 +66,6 @@ Cada fase exige criterios de aceptación verificables y evidencia registrada ant
 # Fase 3 — autenticación y autorización
 
 Implementada en código: login, sesión rotatoria, Passport, RBAC y selección segura de sucursal. La finalización queda sujeta a la validación automatizada e integración documentada en `PHASE_3_REPORT.md`. Fase 4 no se inicia automáticamente.
+# Fase 4 — sucursales
+
+Implementada en código con administración, jobs persistentes, aprovisionamiento, frontend mínimo y pruebas aisladas. La integración real permanece condicionada a PostgreSQL/Docker.

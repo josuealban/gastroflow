@@ -42,6 +42,8 @@
     "security:check": "node scripts/verify-no-secrets.mjs",
     "phase3:verify": "npm --prefix core-service run prisma:control:validate && npm run lint && npm run test && npm --prefix api-gateway run test:e2e && npm --prefix core-service run test:e2e && npm --prefix operations-service run test:e2e && npm --prefix core-service run auth:test && npm run build && npm run security:check && git -c safe.directory=* diff --check",
     "phase3:verify:integration": "node scripts/run-phase3-integration.mjs"
+    ,"phase4:verify": "npm --prefix core-service run prisma:control:validate && npm --prefix operations-service run prisma:branch:validate && npm run lint && npm run test && npm --prefix api-gateway run test:e2e && npm --prefix core-service run branches:test && npm --prefix operations-service run provisioning:test && npm run build && npm run security:check && git -c safe.directory=* diff --check",
+    "phase4:verify:integration": "node scripts/run-phase4-integration.mjs"
   },
   "devDependencies": {
     "concurrently": "^10.0.3"

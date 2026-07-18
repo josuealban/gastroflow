@@ -60,3 +60,6 @@ El Gateway conserva únicamente HTTP/TCP y no recibe URLs PostgreSQL. Los health
 # Extensión de autenticación (Fase 3)
 
 API Gateway expone `/api/v1/auth`, `/session` y `/rbac`, valida Access JWT y aplica guards. Core Service valida credenciales, suscripción y asignaciones, firma/rota tokens y persiste sólo el hash SHA-256 del refresh. Operations Service permanece fuera del flujo de identidad.
+# Aprovisionamiento de sucursales
+
+Core persiste y orquesta trabajos; Operations crea roles/bases y aplica el schema operacional común. Las sucursales siguen siendo registros con bases aisladas, no microservicios.

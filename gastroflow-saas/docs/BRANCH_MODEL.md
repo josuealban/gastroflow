@@ -44,3 +44,6 @@ Se pueden copiar categorías, platillos y definiciones de inventario. Las cantid
 ## Estado
 
 `DOCUMENTED`. No existen todavía el modelo central definitivo, el endpoint, el provisionador ni el selector dinámico válidos para esta arquitectura.
+# Ciclo de aprovisionamiento
+
+Una sucursal nace PROVISIONING, conserva un único BranchProvisioningJob, pasa a ACTIVE tras verificación o FAILED al agotar intentos. Retry reutiliza el mismo registro y credenciales cifradas.

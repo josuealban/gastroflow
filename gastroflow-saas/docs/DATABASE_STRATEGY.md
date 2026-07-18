@@ -43,3 +43,6 @@ La creación de una base no restaura un respaldo completo. Aplica schema limpio,
 El legado global fue retirado. `gastroflow_control` contiene identidad, suscripción, personal y metadatos cifrados. `gastroflow_demo_principal` y `gastroflow_demo_norte` recibieron el mismo historial operacional. Operations obtiene credenciales mediante el contrato TCP interno de Core; el Gateway nunca conoce URLs de PostgreSQL.
 
 Norte representa una copia de plantilla: comparte estructura y datos maestros con IDs propios, pero inicia sin clientes, pedidos, pagos, facturas, compras ni movimientos.
+# Creación automatizada
+
+Operations usa una conexión administrativa exclusivamente interna, identificadores estrictos y `prisma migrate deploy`. Copia sólo maestros desde la plantilla y mantiene transacciones vacías.

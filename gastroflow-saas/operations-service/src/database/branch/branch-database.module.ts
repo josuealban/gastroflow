@@ -40,6 +40,10 @@ import { BranchPrismaClientFactory } from './branch-prisma-client.factory';
     BranchConnectionResolverClient,
     BranchDatabaseService,
   ],
-  exports: [BranchDatabaseService, BranchConnectionCacheService],
+  exports: [
+    BranchDatabaseService,
+    BranchConnectionCacheService,
+    BranchPrismaClientFactory,
+  ],
 })
 export class BranchDatabaseModule {}

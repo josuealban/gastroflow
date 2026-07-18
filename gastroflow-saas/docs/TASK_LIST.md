@@ -77,14 +77,22 @@
 - [ ] Integración PostgreSQL y evidencia manual (credenciales locales rechazadas; Docker no disponible)
 
 ---
-## Fase 4 â€” sucursales â³ PENDIENTE
+## Fase 4 — sucursales
 
-- [ ] Implementar listado y selecciÃ³n autorizada de sucursal.
-- [ ] Implementar `POST /api/v1/session/branch`.
-- [ ] Implementar `POST /api/v1/branches` sin secretos en el DTO.
-- [ ] Implementar estados `PROVISIONING`, `ACTIVE` y `FAILED`.
-- [ ] Crear base operacional, aplicar schema, copiar catÃ¡logos e inicializar en cero.
-- [ ] Probar reintentos, compensaciÃ³n y lÃ­mites del plan.
+- [x] Listado, detalle, creación 202, edición y estados
+- [x] Plan, límite, idempotencia, PROVISIONING y trabajo persistente
+- [x] Reclamo atómico, recuperación, retry y asignaciones iniciales
+- [x] Aprovisionador Operations, migrate deploy, plantilla e invalidación
+- [x] Frontend mínimo, E2E, Postman y documentación
+- [ ] Integración PostgreSQL real y prueba manual (entorno no disponible)
+
+- [x] Implementar listado y selecciÃ³n autorizada de sucursal.
+- [x] Implementar `POST /api/v1/session/branch`.
+- [x] Implementar `POST /api/v1/branches` sin secretos en el DTO.
+- [x] Implementar estados `PROVISIONING`, `ACTIVE` y `FAILED`.
+- [x] Crear el aprovisionador de base operacional, aplicar schema, copiar catÃ¡logos e inicializar en cero.
+- [x] Probar de forma aislada reintentos y lÃ­mites del plan.
+- [ ] Verificar aprovisionamiento y compensaciÃ³n contra PostgreSQL real (entorno no disponible).
 
 ---
 

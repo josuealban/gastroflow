@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { AuthProvider, useAuth } from './auth/AuthContext';
 import './App.css';
+import { BranchManagement } from './branches/BranchManagement';
 
 function Content() {
   const auth = useAuth();
@@ -12,7 +13,7 @@ function Content() {
     <main className="status-page"><section className="status-panel"><p className="eyebrow">Selecciona una sucursal</p><h1>GastroFlow</h1><div className="branch-grid">{auth.branches.map((branch) => <button className="branch-card" key={branch.id} onClick={() => void auth.selectBranch(branch.id)}><strong>{branch.name}</strong><span>{branch.code} · {branch.city ?? 'Sin ciudad'}</span><span>{branch.isPrimary ? 'Principal' : 'Sucursal'} · {branch.roles.join(', ')}</span></button>)}</div><button onClick={() => void auth.logout()}>Cerrar sesión</button></section></main>
   );
   const activeBranch = auth.branches.find((branch) => branch.id === auth.user?.branchId);
-  return <main className="status-page"><section className="status-panel"><p className="eyebrow">Sesión activa</p><h1>{auth.user.name}</h1><p>{auth.user.email}</p><dl className="services"><div className="service-row"><dt>Restaurante</dt><dd>{auth.user.restaurantName}</dd></div><div className="service-row"><dt>Sucursal</dt><dd>{activeBranch?.name ?? 'Sin asignar'}</dd></div><div className="service-row"><dt>Roles</dt><dd>{auth.user.roles.join(', ') || 'Ninguno'}</dd></div><div className="service-row"><dt>Permisos</dt><dd>{auth.user.permissions.join(', ') || 'Ninguno'}</dd></div><div className="service-row"><dt>Gateway</dt><dd className="service-status--ok">Disponible</dd></div></dl>{auth.branches.length > 1 && <button onClick={auth.changeBranch}>Cambiar sucursal</button>} <button onClick={() => void auth.logout()}>Cerrar sesión</button></section></main>;
+  return <main className="status-page"><section className="status-panel"><p className="eyebrow">Sesión activa</p><h1>{auth.user.name}</h1><p>{auth.user.email}</p><dl className="services"><div className="service-row"><dt>Restaurante</dt><dd>{auth.user.restaurantName}</dd></div><div className="service-row"><dt>Sucursal</dt><dd>{activeBranch?.name ?? 'Sin asignar'}</dd></div><div className="service-row"><dt>Roles</dt><dd>{auth.user.roles.join(', ') || 'Ninguno'}</dd></div><div className="service-row"><dt>Permisos</dt><dd>{auth.user.permissions.join(', ') || 'Ninguno'}</dd></div><div className="service-row"><dt>Gateway</dt><dd className="service-status--ok">Disponible</dd></div></dl>{auth.branches.length > 1 && <button onClick={auth.changeBranch}>Cambiar sucursal</button>} <button onClick={() => void auth.logout()}>Cerrar sesión</button>{auth.user.permissions.includes('branches.read')&&<BranchManagement user={auth.user} onOpen={auth.selectBranch}/>}</section></main>;
 }
 
 function Login({ onSubmit, error }: { onSubmit: (value: { restaurantSlug: string; email: string; password: string }) => Promise<void>; error: string }) {

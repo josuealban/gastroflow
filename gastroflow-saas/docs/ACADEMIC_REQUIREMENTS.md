@@ -21,12 +21,12 @@ Fase 2 verificÃ³ Prisma definitivo con PostgreSQL real, dos bases fÃ­sicas, 
 | AC-007 | Request | Solicitud HTTP | MÃ©todo, ruta, headers y body | 1 | API Gateway | `/api/v1/health` | Supertest | Registro de prueba | TESTED |
 | AC-008 | Response | Respuesta HTTP | Estado y JSON estable | 1 | API Gateway | `/api/v1/health` | Supertest | JSON de respuesta | TESTED |
 | AC-009 | Headers | Metadatos HTTP | Content-Type y futura autorizaciÃ³n | 3 | API Gateway | Middleware/Guard | IntegraciÃ³n de headers | Captura de Postman | DOCUMENTED |
-| AC-010 | Body | Carga de solicitud | DTO JSON para comandos | 4 | API Gateway | `POST /api/v1/branches` | ValidaciÃ³n de body | Casos vÃ¡lido/invÃ¡lido | PENDING |
+| AC-010 | Body | Carga de solicitud | DTO JSON para comandos | 4 | API Gateway | `POST /api/v1/branches` | ValidaciÃ³n de body | Casos vÃ¡lido/invÃ¡lido | TESTED |
 | AC-011 | JSON | RepresentaciÃ³n | Contrato externo del Gateway | 1 | API Gateway | Controllers | E2E Content-Type | Respuesta guardada | TESTED |
 | AC-012 | GET | Lectura | Health y futuros listados | 1 | API Gateway | `GET /api/v1/health` | E2E 200/503 | Reporte Jest | TESTED |
-| AC-013 | POST | CreaciÃ³n/acciÃ³n | Sucursales y selecciÃ³n futura | 4 | Gateway / Core | `/api/v1/branches`, `/session/branch` | E2E 201/errores | ColecciÃ³n Postman | PENDING |
+| AC-013 | POST | CreaciÃ³n/acciÃ³n | Sucursales y selecciÃ³n | 4 | Gateway / Core | `/api/v1/branches`, `/session/branch` | E2E 202/errores | ColecciÃ³n Postman | TESTED |
 | AC-014 | PUT | Reemplazo | SÃ³lo donde el recurso lo requiera | 6 | Gateway / Operations | Endpoint por definir | E2E idempotencia | Contrato OpenAPI | PENDING |
-| AC-015 | PATCH | ActualizaciÃ³n parcial | Estado, catÃ¡logo y archivo lÃ³gico | 6 | Gateway / Operations | Endpoint por definir | E2E de cambios parciales | ColecciÃ³n Postman | PENDING |
+| AC-015 | PATCH | ActualizaciÃ³n parcial | Datos y estado de sucursal | 4 | Gateway / Core | `/api/v1/branches/:id`, `/status` | E2E de cambios parciales | ColecciÃ³n Postman | TESTED |
 | AC-016 | DELETE | EliminaciÃ³n | SÃ³lo recursos permitidos; no facturas | 6 | Gateway / Services | Endpoint por definir | E2E y reglas de integridad | Casos de prueba | PENDING |
 | AC-017 | CÃ³digos HTTP | SemÃ¡ntica | 2xx, 4xx y 5xx coherentes | 1 | API Gateway | Health controller | E2E 200/503 | Reporte Jest | TESTED |
 | AC-018 | NestJS | Framework backend | Tres proyectos NestJS separados | 1 | Backend | `*/src/main.ts` | Build y smoke test | Ãrbol del repositorio | TESTED |
@@ -48,10 +48,10 @@ Fase 2 verificÃ³ Prisma definitivo con PostgreSQL real, dos bases fÃ­sicas, 
 | AC-034 | Microservicios | Servicios autÃ³nomos | Gateway, Core y Operations | 1 | Backend | `docs/MICROSERVICES.md` | Health TCP | Diagrama y pruebas | TESTED |
 | AC-035 | Hexagonal | Puertos y adaptadores | Aislar HTTP/TCP/Prisma del dominio | 4 | Backend | interfaces futuras | Unitarias sin infraestructura | Diagrama de puertos | DOCUMENTED |
 | AC-036 | REST | Estilo de API | Recursos HTTP sÃ³lo en Gateway | 4 | API Gateway | `/api/v1` | E2E de contratos | ColecciÃ³n Postman | DOCUMENTED |
-| AC-037 | Recursos | Sustantivos de dominio | branches, products, orders, invoices | 4 | API Gateway | rutas futuras | RevisiÃ³n de naming | CatÃ¡logo de API | PENDING |
-| AC-038 | Endpoints | Operaciones pÃºblicas | Gateway traduce a TCP | 4 | API Gateway | controllers futuros | E2E | Postman/OpenAPI | PENDING |
+| AC-037 | Recursos | Sustantivos de dominio | branches, products, orders, invoices | 4 | API Gateway | rutas de sucursales | RevisiÃ³n de naming | CatÃ¡logo de API | IMPLEMENTED |
+| AC-038 | Endpoints | Operaciones pÃºblicas | Gateway traduce a TCP | 4 | API Gateway | `src/branches/branches.controller.ts` | E2E | Postman | TESTED |
 | AC-039 | Versionamiento `/api/v1` | Compatibilidad | Prefijo global HTTP | 1 | API Gateway | `src/main.ts` | E2E de ruta | Captura 200 | TESTED |
-| AC-040 | Query params | Opciones de lectura | Filtros y paginaciÃ³n | 6 | API Gateway | listados futuros | ValidaciÃ³n de query | Casos Postman | PENDING |
+| AC-040 | Query params | Opciones de lectura | Filtros y paginaciÃ³n | 4 | API Gateway | listado de sucursales | ValidaciÃ³n de query | Casos Postman | TESTED |
 | AC-041 | BÃºsqueda | Coincidencias controladas | CatÃ¡logo, clientes y facturas | 6 | Operations | endpoints futuros | Relevancia y aislamiento | Dataset de prueba | PENDING |
 | AC-042 | Filtros | RestricciÃ³n de resultados | Estado, fecha y sucursal activa | 6 | Operations | repositorios futuros | IntegraciÃ³n | Resultados esperados | PENDING |
 | AC-043 | PaginaciÃ³n | Listados acotados | Especialmente facturas/historial | 6 | Operations | DTO de paginaciÃ³n | Bordes y orden estable | Evidencia Postman | PENDING |
@@ -91,3 +91,12 @@ Un requisito sÃ³lo avanzarÃ¡ de `DOCUMENTED` cuando el cÃ³digo pertenezca 
 | Refresh Token, rotación y revocación | TESTED |
 | Evidencia visual/manual | PENDING |
 | Registro pÃºblico | PENDING |
+
+# Matriz Fase 4
+
+| Requisito | Estado |
+|---|---|
+| CRUD administrativo, RBAC, DTO, filtros y paginaciÃ³n | TESTED |
+| Idempotencia, lÃ­mite del plan y job persistente | TESTED |
+| Aprovisionador, migraciones y copia de plantilla | IMPLEMENTED |
+| IntegraciÃ³n PostgreSQL real y evidencia manual | PENDING |
