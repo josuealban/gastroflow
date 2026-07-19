@@ -1,8 +1,8 @@
-import axios from 'axios';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { apiClient } from '../api/client';
 import type { User } from '../auth/AuthContext';
+import { createIdempotencyKeyController } from './idempotency-key.js';
 import { pollBranchProvisioning } from './provisioning-polling.js';
 import type { ProvisioningProgress } from './provisioning-polling.js';
 
@@ -14,7 +14,7 @@ export function BranchManagement({ user, onOpen }: { user:User; onOpen:(id:strin
   const [items,setItems]=useState<Branch[]>([]), [staff,setStaff]=useState<StaffMember[]>([]);
   const [creating,setCreating]=useState(false), [editing,setEditing]=useState<Branch|null>(null);
   const [error,setError]=useState(''), [progress,setProgress]=useState<Record<string,ProvisioningProgress>>({});
-  const key=useRef<string|null>(null), can=(permission:string)=>user.permissions.includes(permission);
+  const key=useRef(createIdempotencyKeyController(()=>crypto.randomUUID())), can=(permission:string)=>user.permissions.includes(permission);
   const canCreate=can('branches.create');
   const load=useCallback(async()=>setItems((await apiClient.get<{items:Branch[]}>('/branches')).data.items),[]);
   const loadStaff=useCallback(async()=>{if(canCreate)setStaff((await apiClient.get<StaffMember[]>('/branches/assignable-staff')).data)},[canCreate]);
@@ -31,15 +31,15 @@ export function BranchManagement({ user, onOpen }: { user:User; onOpen:(id:strin
   },[items,load]);
 
   async function create(event:FormEvent<HTMLFormElement>){
-    event.preventDefault();const form=new FormData(event.currentTarget);key.current??=crypto.randomUUID();setError('');
+    event.preventDefault();const form=new FormData(event.currentTarget),idempotencyKey=key.current.getOrCreate();setError('');
     const selected=staff.flatMap((member)=>{const roleId=String(form.get(`staff-${member.id}`)??'');return roleId?[{userId:member.id,roleIds:[roleId]}]:[]});
     const number=(name:string)=>form.get(name)===''?undefined:Number(form.get(name));
-    try{await apiClient.post('/branches',{name:String(form.get('name')),code:String(form.get('code')).trim().toUpperCase(),description:String(form.get('description')||'')||undefined,address:String(form.get('address')||'')||undefined,city:String(form.get('city')||'')||undefined,phone:String(form.get('phone')||'')||undefined,latitude:number('latitude'),longitude:number('longitude'),templateBranchId:form.get('templateBranchId')||undefined,initialStaff:selected.length?selected:undefined},{headers:{'Idempotency-Key':key.current}});key.current=null;setCreating(false);await load()}
-    catch(requestError){const uncertain=!axios.isAxiosError(requestError)||!requestError.response;if(!uncertain)key.current=null;setError(uncertain?'No fue posible confirmar el registro. La misma clave se conservará para reintentar.':'La solicitud fue rechazada. Corrige los datos antes de reintentar.')}
+    try{await apiClient.post('/branches',{name:String(form.get('name')),code:String(form.get('code')).trim().toUpperCase(),description:String(form.get('description')||'')||undefined,address:String(form.get('address')||'')||undefined,city:String(form.get('city')||'')||undefined,phone:String(form.get('phone')||'')||undefined,latitude:number('latitude'),longitude:number('longitude'),templateBranchId:form.get('templateBranchId')||undefined,initialStaff:selected.length?selected:undefined},{headers:{'Idempotency-Key':idempotencyKey}});key.current.onSuccess();setCreating(false);await load()}
+    catch(requestError){key.current.onError(requestError);setError(key.current.peek()?'No fue posible confirmar el registro. La misma clave se conservará para reintentar.':'La solicitud fue rechazada. Corrige los datos antes de reintentar.')}
   }
   async function update(event:FormEvent<HTMLFormElement>){event.preventDefault();if(!editing)return;const form=new FormData(event.currentTarget),number=(name:string)=>form.get(name)===''?undefined:Number(form.get(name));try{await apiClient.patch(`/branches/${editing.id}`,{name:String(form.get('name')),description:String(form.get('description')||'')||undefined,address:String(form.get('address')||'')||undefined,city:String(form.get('city')||'')||undefined,phone:String(form.get('phone')||'')||undefined,latitude:number('latitude'),longitude:number('longitude')});setEditing(null);await load()}catch{setError('No fue posible editar la sucursal.')}}
   async function action(run:()=>Promise<unknown>,message:string){setError('');try{await run();await load()}catch{setError(message)}}
-  function cancelCreate(){key.current=null;setCreating(false);setError('')}
+  function cancelCreate(){key.current.cancel();setCreating(false);setError('')}
 
   return <section className="branch-admin"><div className="branch-admin__title"><h2>Sucursales</h2>{canCreate&&<button onClick={()=>setCreating(true)}>+ Nueva sucursal</button>}</div>
     {creating&&<form className="auth-form" onSubmit={(event)=>void create(event)}>

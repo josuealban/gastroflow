@@ -48,7 +48,7 @@ El principal riesgo pendiente es probar compensación de DDL PostgreSQL ante fal
 
 Se ejecutaron desde `gastroflow-saas`:
 
-- `npm run phase4:runner:test`: 5/5 pruebas aprobadas, incluyendo Windows con `node` + `npm-cli.js`, Linux, errores de spawn/señal/status y polling terminal/máximo.
+- `npm run phase4:runner:test`: 16/16 pruebas aprobadas, incluyendo Windows con `node` + `npm-cli.js`, Linux, errores de spawn/señal/status, polling terminal/máximo y política de `Idempotency-Key`.
 - `npm run phase4:verify`: aprobado con schemas Control y operacional válidos, lint sin errores, 16 pruebas Gateway, 38 Core y 29 Operations (83 unitarias backend), 20 E2E Gateway, 11 específicas Core y 9 específicas Operations. Los cuatro builds aprobaron y el control de secretos y `git diff --check` finalizaron correctamente. Frontend conserva una advertencia no bloqueante preexistente de Fast Refresh en `AuthContext.tsx`.
 - `npm run phase4:verify:integration`: **NO EJECUTADO**; el preflight terminó con `spawnSync docker ENOENT` porque Docker Desktop no está instalado o no está disponible en `PATH`.
 - La búsqueda de marcadores de corrupción solicitada solo encontró los conectores de árbol intencionales de `docs/SAAS_MODEL.md`. El mojibake real detectado en documentación y frontend fue corregido.
@@ -56,3 +56,9 @@ Se ejecutaron desde `gastroflow-saas`:
 La prueba aislada de Operations ejecutó dos veces el aprovisionamiento sobre el mismo estado persistente simulado. Confirmó que retry reutiliza el destino y no duplica categoría, producto, inventario, configuración tributaria ni secuencia; además confirmó IDs distintos a la plantilla, `categoryId` remapeado, conteos esperados, productos deshabilitados, inventario cero y Outbox/transacciones vacíos.
 
 No se crearon realmente rol ni base PostgreSQL en este cierre; tampoco se ejecutaron físicamente `migrate deploy`, copia de maestros, aislamiento, retry real, limpieza de `gf_test_*`, health ni recorrido manual. Esos puntos permanecen **NO VERIFICADOS** hasta ejecutar la suite con Docker Desktop iniciado y variables válidas. No se declara aprobada ninguna de esas evidencias.
+
+## 13. Limpieza final e idempotencia HTTP
+
+Se eliminó del repositorio `Fase4_b949488.patch` mediante `git rm` y también se retiró el parche accidental no rastreado `Fase4_correcciones_actuales.patch`. `git ls-files "*.patch"` no devuelve archivos.
+
+Frontend conserva la misma clave idempotente ante error sin respuesta, timeout, HTTP 408, 425 y cualquier 5xx. La descarta ante respuestas HTTP deterministas —incluidos 400 y 409—, creación confirmada o cancelación explícita. Las pruebas automatizadas confirman red sin respuesta, 408, 425, 500, 502, 503, 504, 400, 409, éxito y cancelación. La integración PostgreSQL continúa **NO EJECUTADA** porque Docker no está disponible.
